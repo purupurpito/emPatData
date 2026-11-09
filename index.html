@@ -1,0 +1,1572 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="emPat Data: estadísticas de vóley a pie de pista. Apunta tocando jugadores y saca side-out, break, eficacia, zonas y mapas. Los datos se quedan en tu dispositivo.">
+<meta name="theme-color" content="#0F1B33">
+<link rel="icon" href="icono.svg" type="image/svg+xml">
+<link rel="icon" href="icono-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="icono-180.png">
+<style>:root{box-sizing:border-box}body{margin:0;padding:0}[hidden]:not([hidden=until-found i]){display:none!important}</style>
+</head>
+<body>
+<title>emPat Data</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: app nativa de móvil — listas agrupadas en tarjetas blancas sobre gris, marcador grande arriba, botones grandes y redondeados, barra de pestañas abajo */
+:root{
+  --bg:#F2F3F6; --card:#ffffff; --fill:#EEF0F4; --fill-2:#E1E4EB; --ink:#0F1B33; --muted:#5F6B80; --sep:#E3E6EC;
+  --brand:#0F1B33; --ball:#FF7A45;
+  --us:#D4521C; --them:#3E5A8C; --bad:#C81E35; --good:#17804A; --mid:#94600A; --lib:#14806F;
+  --us-tint:rgba(232,98,46,.12); --them-tint:rgba(62,90,140,.12); --bad-tint:rgba(215,38,61,.10); --good-tint:rgba(31,157,85,.12); --mid-tint:rgba(217,138,0,.13);
+  --on-accent:#ffffff;
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --font-num:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --r:16px; --r-sm:12px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0A1222; --card:#131E33; --fill:#1C2942; --fill-2:#26355A; --ink:#F2F4F8; --muted:#9AA6BD; --sep:#1F2C47;
+  --brand:#0F1B33; --ball:#FF7A45;
+  --us:#FF7A45; --them:#8FA8D8; --bad:#FF5C6C; --good:#32c46f; --mid:#ffb02e; --lib:#3CC7B0;
+  --us-tint:rgba(255,122,69,.18); --them-tint:rgba(143,168,216,.16); --bad-tint:rgba(255,92,108,.18); --good-tint:rgba(50,196,111,.18); --mid-tint:rgba(255,176,46,.18);
+  --on-accent:#0F1B33; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0A1222; --card:#131E33; --fill:#1C2942; --fill-2:#26355A; --ink:#F2F4F8; --muted:#9AA6BD; --sep:#1F2C47;
+  --brand:#0F1B33; --ball:#FF7A45;
+  --us:#FF7A45; --them:#8FA8D8; --bad:#FF5C6C; --good:#32c46f; --mid:#ffb02e; --lib:#3CC7B0;
+  --us-tint:rgba(255,122,69,.18); --them-tint:rgba(143,168,216,.16); --bad-tint:rgba(255,92,108,.18); --good-tint:rgba(50,196,111,.18); --mid-tint:rgba(255,176,46,.18);
+  --on-accent:#0F1B33; color-scheme:dark}
+html,body{height:100%}
+html.big #app,html.big #sheet .sheet{zoom:1.15}
+details.help{background:var(--fill);border-radius:var(--r-sm);padding:10px 12px}
+details.help summary{cursor:pointer;font-weight:600;font-size:14px;color:var(--us)}
+details.help dl{margin:8px 0 0;display:grid;grid-template-columns:auto 1fr;gap:6px 12px;font-size:14px}
+details.help dt{font-weight:700}details.help dd{margin:0;color:var(--muted)}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.4;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+*{box-sizing:border-box}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;-webkit-tap-highlight-color:transparent}
+:focus-visible{outline:3px solid var(--us);outline-offset:2px}
+.wrap{max-width:820px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:12px 120px;display:flex;flex-direction:column;gap:20px}
+h1,h2{margin:0;font-weight:700;letter-spacing:-.02em;text-wrap:balance}
+h1{font-size:30px;line-height:1.1}
+h2{font-size:24px;line-height:1.15}
+.hand{margin:0;font-size:13px;font-weight:500;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.hand.us{color:var(--us)} .hand.them{color:var(--them)}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.spread{justify-content:space-between}
+/* Cabecera */
+.top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-top:8px}
+.brand{display:flex;align-items:center;gap:12px}
+.brand .logo{width:46px;height:46px;flex:none;border-radius:11px;box-shadow:0 0 0 1px var(--sep)}
+.brand h1{font-weight:800;letter-spacing:-.03em}
+.brand h1 .bp{color:var(--us)}
+.brand h1 .data{font-weight:600;color:var(--muted);letter-spacing:-.01em}
+.brand .hand{margin:0;text-transform:none;letter-spacing:0;font-size:15px}
+.sync{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.sync i{width:7px;height:7px;border-radius:50%;background:var(--muted);display:inline-block}
+.sync[data-s="cloud"] i{background:var(--good)} .sync[data-s="offline"] i{background:var(--mid)} .sync[data-s="error"] i{background:var(--bad)}
+/* Tarjetas */
+.zone,.sheetcard{background:var(--card);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.zone.bare{background:transparent;padding:0}
+/* Botones */
+.btn{border:0;background:var(--fill);border-radius:var(--r-sm);padding:10px 16px;font-weight:600;font-size:15px;min-height:44px;color:var(--us)}
+.btn.primary{background:var(--us);color:var(--on-accent)}
+.btn.danger{color:var(--bad);background:var(--bad-tint)}
+.btn.sm{min-height:36px;padding:6px 12px;font-size:14px;border-radius:10px}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn:active:not(:disabled){opacity:.7}
+.tag{display:inline-block;font-size:12px;font-weight:600;padding:3px 9px;border-radius:99px}
+.tag.ex{background:var(--mid-tint);color:var(--mid)}
+.tag.live{background:var(--bad-tint);color:var(--bad)}
+/* Marcador */
+.score{background:var(--card);border-radius:var(--r);padding:18px 16px 14px;display:grid;grid-template-columns:1fr auto 1fr;align-items:start;gap:8px}
+.score .t{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0;text-align:center}
+.score .tn{font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.score .t.us .tn{color:var(--us)} .score .t.them .tn{color:var(--them)}
+.score .n{font-family:var(--font-num);font-size:clamp(64px,18vw,96px);font-weight:700;line-height:.95;letter-spacing:-.04em;font-variant-numeric:tabular-nums}
+.score .ts{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.score .mid{display:flex;flex-direction:column;align-items:center;gap:4px;padding-top:30px}
+.score .colon{font-size:40px;font-weight:300;color:var(--muted);line-height:1}
+.score .setn{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.srv{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:3px 9px;border-radius:99px;background:var(--fill);color:var(--muted);visibility:hidden}
+.srv.on{visibility:visible;background:var(--us-tint);color:var(--us)}
+.t.them .srv.on{background:var(--them-tint);color:var(--them)}
+.srv::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.setline{display:flex;gap:6px;flex-wrap:wrap;font-variant-numeric:tabular-nums}
+.setline span{background:var(--fill);border-radius:99px;padding:4px 11px;font-size:13px;font-weight:600;color:var(--muted)}
+.setline span.w{background:var(--us-tint);color:var(--us)} .setline span.l{background:var(--them-tint);color:var(--them)}
+.note{background:var(--card);border-radius:var(--r);padding:16px;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;box-shadow:inset 0 0 0 2px var(--us)}
+.note .hand{margin:0;text-transform:none;letter-spacing:0;font-size:17px;font-weight:600;color:var(--ink)}
+/* Jugadores */
+.bench{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.jsy{border:0;background:var(--fill);border-radius:var(--r-sm);padding:10px 12px;display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:10px;align-items:center;text-align:left;min-height:62px}
+.jsy .badge{grid-row:1/3}
+.jsy .nm{font-weight:600;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.jsy .tally{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.jsy .tally b{color:var(--good);font-weight:600} .jsy .tally em{color:var(--bad);font-style:normal;font-weight:600}
+.jsy:active:not(:disabled){background:var(--fill-2)}
+.jsy:disabled{opacity:.4;cursor:not-allowed}
+.badge{width:42px;height:42px;border-radius:50%;background:var(--us);color:var(--on-accent);display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;font-variant-numeric:tabular-nums;flex:none}
+.badge.lib{background:var(--lib)}
+.badge.lg{width:52px;height:52px;font-size:22px}
+.quick{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.qbtn{border:0;border-radius:var(--r-sm);padding:10px;min-height:58px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-weight:600;font-size:15px;background:var(--fill)}
+.qbtn small{font-weight:400;font-size:12px;color:var(--muted)}
+.qbtn.us{background:var(--us-tint);color:var(--us)} .qbtn.them{background:var(--them-tint);color:var(--them)}
+.qbtn:disabled{opacity:.4;cursor:not-allowed}
+@media (min-width:640px){.quick{grid-template-columns:repeat(4,1fr)}}
+/* Jugadas */
+.feed{display:flex;flex-direction:column;margin:0;padding:0;list-style:none}
+.feed li{display:flex;gap:12px;align-items:center;font-size:15px;padding:9px 0;border-bottom:1px solid var(--sep)}
+.feed li:last-child{border-bottom:0}
+.feed .sc{font-weight:600;font-variant-numeric:tabular-nums;color:var(--muted);min-width:46px;font-size:14px}
+.code{font-weight:700;font-size:15px;min-width:30px;height:28px;display:inline-flex;align-items:center;justify-content:center;border-radius:8px}
+.r-good{color:var(--good);background:var(--good-tint)} .r-bad{color:var(--bad);background:var(--bad-tint)} .r-mid{color:var(--mid);background:var(--mid-tint)} .r-neu{color:var(--muted);background:var(--fill)}
+.codes{font-size:12px;color:var(--muted);display:flex;gap:4px 12px;flex-wrap:wrap}
+.codes b{color:var(--ink)}
+/* Hoja de acciones */
+.sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:30;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--bg);width:100%;max-width:640px;max-height:92%;overflow:auto;border-radius:20px 20px 0 0;padding:8px max(16px,env(safe-area-inset-right,0px)) calc(16px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:10px}
+.sheet::before{content:"";align-self:center;width:38px;height:5px;border-radius:3px;background:var(--fill-2);margin-bottom:4px}
+.sheet header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:4px 0 6px}
+.frow{background:var(--card);border-radius:var(--r-sm);padding:10px;display:flex;flex-direction:column;gap:8px}
+.frow .fn{font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.frow.hot{box-shadow:inset 0 0 0 2px var(--us)}
+.frow.hot .fn{color:var(--us)}
+.frow.hot .fn::after{content:" · lo más probable ahora";text-transform:none;letter-spacing:0;font-weight:500}
+.opts{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.opt{border:0;border-radius:10px;padding:6px 4px;min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:600;font-size:13px;line-height:1.2}
+.opt b{font-size:19px;font-weight:700;line-height:1.1}
+.opt small{font-weight:600;font-size:11px}
+.opt:active{filter:brightness(.92)}
+/* Formularios */
+label.f{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:500;color:var(--muted)}
+input[type=text],input[type=number],input[type=date],select,textarea{background:var(--fill);border:0;border-radius:10px;padding:10px 12px;min-height:44px;width:100%;color:var(--ink);font-size:16px}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--us);outline-offset:0}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
+.rmpask{grid-column:1/-1;display:flex;gap:8px;justify-content:flex-end}
+.prow{display:grid;grid-template-columns:42px 72px 1fr 150px 40px;gap:8px;align-items:center}
+@media (max-width:560px){.prow{grid-template-columns:42px 52px 1fr 40px;gap:6px}.prow select{grid-column:2/4}}
+.prow .btn{padding:0;min-height:40px}
+.checks{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.checks label{display:flex;gap:8px;align-items:center;background:var(--fill);border-radius:10px;padding:10px 12px;font-size:15px}
+.checks input{width:18px;height:18px;accent-color:var(--us)}
+.seg{display:inline-flex;flex-wrap:wrap;gap:2px;background:var(--fill);border-radius:10px;padding:2px;align-self:flex-start;max-width:100%}
+.seg button{border:0;background:transparent;border-radius:8px;padding:6px 12px;min-height:34px;font-weight:600;font-size:14px}
+.seg button[aria-pressed="true"]{background:var(--card);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+/* Estadísticas */
+.figs{display:grid;grid-template-columns:repeat(2,1fr);gap:16px 12px}
+@media (min-width:640px){.figs{grid-template-columns:repeat(4,1fr)}}
+.fig{display:flex;flex-direction:column;gap:2px}
+.fig .k{font-size:13px;color:var(--muted);font-weight:500}
+.fig .v{font-size:36px;font-weight:700;letter-spacing:-.03em;line-height:1.05;font-variant-numeric:tabular-nums}
+.fig .s{font-size:12px;color:var(--muted)}
+.fig.us .v{color:var(--us)} .fig.them .v{color:var(--them)}
+.bars{display:flex;flex-direction:column;gap:10px}
+.bar{display:grid;grid-template-columns:130px 1fr 30px;gap:10px;align-items:center;font-size:15px}
+.bar .t{height:10px;background:var(--fill);border-radius:99px;overflow:hidden}
+.bar .t i{display:block;height:100%;background:var(--bad);border-radius:99px}
+.bar .n{font-weight:600;text-align:right;font-variant-numeric:tabular-nums}
+@media (max-width:420px){.bar{grid-template-columns:110px 1fr 26px;font-size:14px}}
+.tablebox{overflow-x:auto;margin:0;padding:0}
+table.st{border-collapse:collapse;width:100%;font-size:14px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.st th,.st td{padding:8px 8px;text-align:right;border-bottom:1px solid var(--sep)}
+.st th{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600}
+.st thead tr:first-child th{text-align:center;color:var(--ink);font-size:12px;border-bottom:0;padding-bottom:0}
+.st th.l,.st td.l{text-align:left;position:sticky;left:0;background:var(--card);z-index:1}
+.st td.grp,.st th.grp{padding-left:14px}
+.st tbody tr:last-child td{border-bottom:0}
+.st tr.tot td{font-weight:700}
+.st .num{display:inline-flex;width:24px;height:24px;border-radius:50%;background:var(--us-tint);color:var(--us);align-items:center;justify-content:center;font-size:12px;font-weight:700;margin-right:4px}
+.pos{color:var(--good)} .neg{color:var(--bad)}
+.chart svg{width:100%;height:auto;display:block}
+.chart .ax{stroke:var(--sep);stroke-width:1} .chart .zero{stroke:var(--fill-2);stroke-width:1.5}
+.chart .lu{fill:none;stroke:var(--us);stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round}
+.chart text{fill:var(--muted);font-size:12px;font-family:var(--font)}
+.chart text.h.us{fill:var(--us)} .chart text.h.them{fill:var(--them)}
+/* Historial */
+.mlist{display:flex;flex-direction:column}
+.mitem{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;padding:12px 0;border-bottom:1px solid var(--sep)}
+.mitem:last-child{border-bottom:0}
+.mitem .res{font-size:28px;font-weight:700;letter-spacing:-.03em;font-variant-numeric:tabular-nums;min-width:52px}
+.mitem .res.w{color:var(--us)} .mitem .res.l{color:var(--them)}
+@media (max-width:600px){.mitem{grid-template-columns:auto 1fr}.mitem .acts{grid-column:1/-1}}
+/* Pestañas */
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;background:color-mix(in srgb,var(--card) 88%,transparent);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-top:1px solid var(--sep);display:grid;grid-template-columns:repeat(4,1fr);padding:4px max(8px,env(safe-area-inset-right,0px)) calc(4px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px))}
+nav.tabs button{border:0;background:transparent;padding:6px 4px;font-weight:500;font-size:11px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px}
+nav.tabs svg{width:25px;height:25px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+nav.tabs button[aria-current="page"]{color:var(--us)}
+.empty{display:flex;flex-direction:column;gap:12px;align-items:flex-start}
+.empty .hand{margin:0}
+.empty ol{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:6px}
+.toast{pointer-events:none}.toast .tact{pointer-events:auto}
+body:has(#sheet) .toast{bottom:auto;top:calc(12px + env(safe-area-inset-top,0px))}
+.cl{display:inline-block;max-width:min(160px,34vw);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle}
+.toast .tact{margin-left:12px;border:0;background:none;color:var(--ball);font-weight:700;font-size:14px;padding:4px 2px;min-height:32px}
+#savefail{position:sticky;top:0;z-index:30}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:99px;font-weight:600;font-size:14px;z-index:40;max-width:90%;box-shadow:0 6px 20px rgba(0,0,0,.18)}
+@media (prefers-reduced-motion:no-preference){.sheet{animation:up .22s ease-out}@keyframes up{from{transform:translateY(24px);opacity:.6}to{transform:none;opacity:1}}}
+/* Fase 0: log editable, avisos, n junto a los % */
+.note.warn{box-shadow:inset 0 0 0 2px var(--bad)}
+#vidbox{position:sticky;top:0;z-index:20;max-width:820px;margin:0 auto;padding:8px max(16px,env(safe-area-inset-right,0px)) 8px max(16px,env(safe-area-inset-left,0px));background:var(--bg);display:flex;flex-direction:column;gap:6px}
+#vidbox[hidden]{display:none}
+#vidbox video{width:100%;max-height:38vh;background:#000;border-radius:var(--r-sm)}
+#vidbox .vctl{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+#vidbox .vctl .btn{min-width:48px}
+.seek{border:0;background:var(--fill);color:var(--us);border-radius:99px;font-size:12px;font-weight:700;padding:4px 8px;min-height:32px;white-space:nowrap}
+.stepper{display:flex;align-items:center;gap:10px}
+.stepper .n{font:700 34px/1 var(--font-num);min-width:56px;text-align:center;font-variant-numeric:tabular-nums}
+.stepper .btn{min-width:52px;font-size:22px}
+.gapgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+#imgbox{position:fixed;inset:0;z-index:35;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:16px}
+#imgbox .card{background:var(--bg);border-radius:var(--r);padding:14px;max-width:560px;width:100%;max-height:94%;overflow:auto;display:flex;flex-direction:column;gap:10px}
+#imgbox img{width:100%;border-radius:var(--r-sm);box-shadow:0 2px 12px rgba(0,0,0,.2)}
+.note.warn .hand{color:var(--bad)}
+.feed li .lbl{flex:1;min-width:0}
+.feed li.bad .lbl{color:var(--bad)}
+.feed .imsg{display:block;font-size:12px;color:var(--bad);font-weight:500}
+.icon{border:0;background:var(--fill);border-radius:10px;width:40px;height:40px;flex:none;display:inline-flex;align-items:center;justify-content:center;color:var(--muted)}
+.icon svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.icon:active{background:var(--fill-2)}
+.rally{display:flex;flex-direction:column;border-top:1px solid var(--sep);padding-top:8px}
+.rally:first-child{border-top:0;padding-top:0}
+.rh{display:flex;justify-content:space-between;gap:8px;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.rh .w{color:var(--us)} .rh .l{color:var(--them)}
+.rally .feed li{padding:6px 0;border-bottom:0}
+.opt.was{box-shadow:inset 0 0 0 3px currentColor}
+.pchips{display:flex;flex-wrap:wrap;gap:6px}
+.pchip{border:0;background:var(--fill);border-radius:99px;padding:6px 12px;min-height:36px;font-weight:600;font-size:14px}
+.pchip[aria-pressed="true"]{background:var(--us);color:var(--on-accent)}
+.pchip.lib[aria-pressed="true"]{background:var(--lib)}
+.badge.none{background:var(--fill-2);color:var(--muted)}
+.jsy.later{background:transparent;box-shadow:inset 0 0 0 2px var(--fill-2)}
+.nn{font-size:11px;color:var(--muted);margin-left:3px;font-weight:500}
+.low{opacity:.5}
+.pend{display:flex;flex-direction:column}
+.pend li{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--sep)}
+.pend li:last-child{border-bottom:0}
+.otab{display:flex;flex-direction:column;gap:10px}
+.orow{display:grid;grid-template-columns:110px 1fr;gap:8px;align-items:start}
+.orow .fn{font-size:14px;font-weight:600;padding-top:8px}
+.ocells{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
+.ocell{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--muted)}
+.ocell select{min-height:38px;padding:6px 8px;font-size:14px}
+@media (max-width:460px){.orow{grid-template-columns:1fr}.orow .fn{padding-top:0}}
+/* Fase 1: pista, alineación, saque rápido */
+.score .rotn{font-size:12px;font-weight:600;padding:2px 9px;border-radius:99px;background:var(--fill);color:var(--muted);font-variant-numeric:tabular-nums}
+.court{display:flex;flex-direction:column;gap:8px}
+.net{position:relative;height:6px;border-radius:3px;background:var(--fill-2);margin:8px 0 2px}
+.net span{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:var(--card);padding:0 8px;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.cgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.cgrid>:nth-child(-n+3){margin-bottom:6px}
+.cpos{position:relative;border:0;background:var(--fill);border-radius:var(--r-sm);padding:24px 6px 10px;min-height:104px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-width:0}
+.cpos .z{position:absolute;top:7px;left:9px;font-size:12px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
+.cpos .flag{position:absolute;top:6px;right:6px;font-size:11px;font-weight:700;padding:1px 7px;border-radius:99px;background:var(--us-tint);color:var(--us)}
+.cpos .flag.set{background:var(--fill-2);color:var(--ink)}
+.cpos .flag.lib{background:color-mix(in srgb,var(--lib) 16%,transparent);color:var(--lib)}
+.cpos .nm{font-weight:600;font-size:14px;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cpos .tally{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.cpos .tally b{color:var(--good)} .cpos .tally em{color:var(--bad);font-style:normal}
+.cpos.srvp{box-shadow:inset 0 0 0 2px var(--us)}
+.cpos.islib{background:color-mix(in srgb,var(--lib) 10%,var(--fill))}
+.cpos:active:not(:disabled){background:var(--fill-2)}
+.cpos:disabled{opacity:.45;cursor:not-allowed}
+.benchline{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.benchline .muted{margin-right:2px}
+.zone.serve{box-shadow:inset 0 0 0 2px var(--us)}
+.qbtn.lib{background:color-mix(in srgb,var(--lib) 14%,transparent);color:var(--lib)}
+.lslot{display:flex;flex-direction:column;gap:4px;background:var(--fill);border-radius:var(--r-sm);padding:6px;min-width:0}
+.lslot .z{font-size:12px;font-weight:700;color:var(--muted)}
+.lslot select{background:var(--card);padding:6px 2px 6px 6px;min-height:44px;font-size:14px;text-overflow:ellipsis}
+.rtab td.l b{font-variant-numeric:tabular-nums}
+/* Fase 2: zonas y mapas */
+.zpick{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:flex-start}
+.zpick .zl{font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px}
+.zgrid{display:grid;grid-template-columns:repeat(3,40px);gap:4px}
+.zgrid.org{grid-template-columns:repeat(3,40px)}
+.zb{border:0;background:var(--fill);border-radius:8px;height:34px;font-weight:700;font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums}
+.zb[aria-pressed="true"]{background:var(--them);color:var(--on-accent)}
+.zgrid.org .zb[aria-pressed="true"]{background:var(--us)}
+.znet{grid-column:1/-1;height:4px;border-radius:2px;background:var(--fill-2);margin:1px 0}
+.map{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;max-width:420px}
+.map .mc{border-radius:10px;padding:10px 6px;min-height:74px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-align:center;font-variant-numeric:tabular-nums;position:relative}
+.map .mc .zn{position:absolute;top:5px;left:8px;font-size:11px;font-weight:700;color:var(--ink);opacity:.7}
+.map .mc b{font-size:22px;line-height:1}
+.map .mc span{font-size:12px;color:var(--ink);opacity:.85}
+.map .mnet{grid-column:1/-1;text-align:center;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;border-top:4px solid var(--fill-2);padding-top:3px}
+.mitem .medit{grid-column:1/-1}
+.tag.ns{background:var(--fill);color:var(--muted)}
+#printbox{position:fixed;inset:0;z-index:35;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:16px}
+#printbox .card{background:var(--bg);border-radius:var(--r);padding:14px;max-width:900px;width:100%;height:94%;display:flex;flex-direction:column;gap:10px}
+#printbox iframe{flex:1;width:100%;border:0;border-radius:var(--r-sm);background:#fff;box-shadow:0 2px 12px rgba(0,0,0,.2)}
+@media print{nav.tabs,#vidbox,.toast,#sheet,#imgbox,#printbox,.btn,.icon,.seek,.seg,select,details.help,.note{display:none!important}
+  body{background:#fff;color:#000}.zone,.sheetcard{break-inside:avoid;box-shadow:none;border:1px solid #ccc}.wrap{padding:0}}
+</style>
+
+<div id="vidbox" hidden></div>
+<div class="wrap" id="app"></div>
+<nav class="tabs" id="tabs" aria-label="Secciones">
+  <button data-go="live"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3c-1.5 4.5-.5 9 4.5 11.5M21 13.5c-4.5-1.5-9.5-.5-12 4.5M4.5 6.5c3 3.5 8 5 12.5 3.5"/></svg>Partido</button>
+  <button data-go="stats"><svg viewBox="0 0 24 24"><path d="M5 20V11M12 20V5M19 20v-6"/></svg>Estadísticas</button>
+  <button data-go="history"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 9.5h16M8.5 3v4M15.5 3v4"/></svg>Partidos</button>
+  <button data-go="team"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-4 3.5-6 6.5-6s5.7 2 6.5 6M16 4.5a3.5 3.5 0 0 1 0 7M18 14c2 .6 3.2 2.6 3.5 6"/></svg>Equipo</button>
+</nav>
+
+<script>
+(function(){
+"use strict";
+/* ---------- Modelo ---------- */
+const POS={COL:"Colocador",OPU:"Opuesto",REC:"Receptor",CEN:"Central",LIB:"Líbero",UNI:"Universal"};
+/* Fundamentos y evaluaciones. Quién gana el rally lo dice la tabla de resultados (configurable), no esta lista. */
+const FUND={
+  S:{n:"Saque",o:[["#","Ace"],["+","Positivo"],["!","En juego"],["=","Error"]]},
+  R:{n:"Recepción",o:[["#","Perfecta"],["+","Positiva"],["-","Negativa"],["=","Error"]]},
+  A:{n:"Ataque",o:[["#","Punto"],["+","En juego"],["/","Bloqueado"],["=","Error"]]},
+  B:{n:"Bloqueo",o:[["#","Punto"],["+","Toque"],["=","Error"]]},
+  D:{n:"Defensa",o:[["#","Perfecta"],["+","Levantada"],["=","Error"]]},
+  E:{n:"Colocación",o:[["#","Perfecta"],["+","Buena"],["=","Error"]]},
+  X:{n:"Falta",o:[["r","Red / invasión"],["d","Dobles / retención"],["p","Pisada / rotación"],["o","Otra falta"]]}
+};
+const ACT="SRAEBDX";
+const BASE_ORDER=["S","R","A","B","D","E","X"];
+const DEFAULT_TABLE={S:{"#":"us","=":"them"},R:{"=":"them"},A:{"#":"us","/":"them","=":"them"},B:{"#":"us","=":"them"},D:{"=":"them"},E:{"=":"them"},X:{r:"them",d:"them",p:"them",o:"them"}};
+const TEAMF={RE:"Error del rival",RP:"Punto del rival",T:"Tiempo muerto"};
+const LS_KEY="libreta-voley-v1";
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const newId=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const clone=o=>JSON.parse(JSON.stringify(o));
+const pct=(a,b)=>b?Math.round(a*100/b)+"%":"–";
+/* Porcentaje con el número de acciones al lado; con menos de 3 acciones sale atenuado */
+const pctN=(a,b)=>b?`<span class="${b<3?"low":""}" title="${a} de ${b}">${Math.round(a*100/b)}%<span class="nn">${b}</span></span>`:"–";
+const today=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
+const fdate=s=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(String(s||"")))return"";const[y,m,d]=s.split("-");return d+"/"+m+"/"+y};
+/* Limpieza de lo que llega de fuera (copias, partidos recibidos, cuenta): ids solo con letras y números, números como números */
+const sid=v=>v==null||v===""?v:String(v).replace(/[^A-Za-z0-9_-]/g,"");
+const snum=v=>{const n=+v;return isFinite(n)?n:0};
+function cleanPlayers(arr){return(Array.isArray(arr)?arr:[]).filter(p=>p&&typeof p==="object").map(p=>({...p,id:sid(p.id)||newId(),num:snum(p.num),name:String(p.name==null?"":p.name),pos:POS[p.pos]?p.pos:"REC"}))}
+function cleanMatch(m){if(m.id!=null)m.id=sid(m.id);if(m.date!=null&&!/^\d{4}-\d{2}-\d{2}$/.test(String(m.date)))m.date="";
+  if(m.bestOf!=null)m.bestOf=[1,3,5].includes(+m.bestOf)?+m.bestOf:5;["pts","tie"].forEach(k=>{if(m[k]!=null){const n=+m[k];m[k]=n>=1&&n<=99?n:(k==="pts"?25:15)}});if(m.maxSubs!=null)m.maxSubs=snum(m.maxSubs)||6;
+  m.rival=String(m.rival==null?"":m.rival);if(m.comp!=null)m.comp=String(m.comp);if(m.video)m.video={name:String(m.video.name||"")};
+  m.players=cleanPlayers(m.players);if(Array.isArray(m.roster))m.roster=m.roster.map(sid);
+  const cz=o=>{["id","ref","p","pin","pout","p1"].forEach(k=>{if(o[k]!=null)o[k]=sid(o[k])});["us","them","vt"].forEach(k=>{if(o[k]!=null)o[k]=snum(o[k])});
+    ["z","zo"].forEach(k=>{if(o[k]!=null){const n=+o[k];if(n>=1&&n<=9&&Number.isInteger(n))o[k]=n;else o[k]=null}});if(o.r!=null)o.r=String(o.r).slice(0,2);if(o.f!=null)o.f=String(o.f).slice(0,4)};
+  m.sets.forEach(st=>{if(st.lineup&&typeof st.lineup==="object"){st.lineup.p=(st.lineup.p||[]).map(sid);st.lineup.setter=sid(st.lineup.setter);st.lineup.libs=(st.lineup.libs||[]).map(sid)}
+    st.log=st.log.filter(x=>x&&typeof x==="object");st.log.forEach(x=>{cz(x);if(x.k==="edit"&&x.set&&typeof x.set==="object")cz(x.set)})});return m}
+function rclass(f,r,T){const w=T&&T[f]&&T[f][r];if(f==="X"||w==="them")return"r-bad";if(w==="us"||r==="#")return"r-good";if(r==="-")return"r-mid";return"r-neu"}
+const optLabel=(f,r)=>{const o=FUND[f]&&FUND[f].o.find(x=>x[0]===r);return o?o[1]:r};
+
+let S={team:{name:"Mi equipo",players:[],table:clone(DEFAULT_TABLE),updatedAt:0},matches:{},deleted:{}};
+const ui={view:"live",liveId:null,sheet:null,statsId:null,statsSet:"all",confirmDel:null,newForm:null,toast:null,logOpen:false,logSet:null};
+
+/* ---------- Formato de los partidos y migración ----------
+   v1 (anterior): m.sets=[{first}], m.events=[{s,p,f,r,pt,us,them,sv,...}] con el marcador guardado en cada jugada.
+   v2: cada set lleva su propio log append-only: m.sets=[{first,lineup,log:[...]}].
+       Entradas del log: {k:"ev",id,t,f,...} (jugada), {k:"del",id,t,ref} (quita una jugada), {k:"edit",id,t,ref,set:{...}} (la corrige).
+       Marcador, saque, fin de set y estadísticas salen siempre de replay(). */
+function normalizeMatch(m){
+  if(!m||typeof m!=="object")return m;
+  if(m.v===2&&Array.isArray(m.sets)){m.sets.forEach(s=>{if(!Array.isArray(s.log))s.log=[];if(s.lineup===undefined)s.lineup=null});if(!m.table)m.table=clone(DEFAULT_TABLE);return cleanMatch(m)}
+  const sets=(m.sets&&m.sets.length?m.sets:[{first:"us"}]).map(s=>({first:s.first==="them"?"them":"us",lineup:null,log:[]}));
+  for(const e of(m.events||[])){
+    const si=Math.max(0,Math.min(sets.length-1,+e.s||0));
+    const x={k:"ev",id:e.id||newId(),t:e.t||m.updatedAt||0,f:e.f,p:e.p==null?null:e.p};
+    if(e.r!=null)x.r=e.r;if(e.n)x.n=e.n;if(e.side)x.side=e.side;
+    if(e.f==="X"&&x.n){const o=FUND.X.o.find(o=>o[1]===x.n);if(o)x.r=o[0]}
+    sets[si].log.push(x);
+  }
+  m.sets=sets;delete m.events;m.v=2;m.table=clone(DEFAULT_TABLE);if(!m.maxSubs)m.maxSubs=6;
+  return cleanMatch(m);
+}
+function loadLocal(){try{const raw=localStorage.getItem(LS_KEY);if(raw){const d=JSON.parse(raw);if(d&&d.team){
+  if(Object.values(d.matches||{}).some(m=>m&&m.v!==2)){try{if(!localStorage.getItem(LS_KEY+"-copia-v1"))localStorage.setItem(LS_KEY+"-copia-v1",raw)}catch(e){}}
+  S=Object.assign(S,d);if(!S.team.table)S.team.table=clone(DEFAULT_TABLE);for(const k in S.matches)normalizeMatch(S.matches[k]);return true}}}catch(e){}return false}
+/* Guarda en el dispositivo. Si falla (almacenamiento lleno o bloqueado) lo dice y no se calla: ui.saveFail pinta un aviso fijo */
+function saveLocal(){let ok=true;try{localStorage.setItem(LS_KEY,JSON.stringify(S))}catch(e){ok=false}
+  if(ok!==!ui.saveFail){ui.saveFail=!ok;const el=$("#savefail");if(el&&ok)el.remove();if(!ok&&$("#app")&&!el)render()}return ok}
+
+/* ---------- Motor: log → estado ---------- */
+/* Aplica las correcciones (del/edit) y devuelve las jugadas vigentes del set, en orden */
+function effective(set){const out=[],idx={};
+  /* {k:"undo",ref} anula una corrección (del/edit) anterior: así «Deshacer» devuelve una jugada borrada o quita una corrección sin borrar nada */
+  const undone=new Set();for(const x of set.log)if(x.k==="undo")undone.add(x.ref);
+  for(const x of set.log){
+    if(x.k==="undo"||undone.has(x.id))continue;
+    if(x.k==="del"){const i=idx[x.ref];if(i!=null)out[i]=null}
+    else if(x.k==="edit"){const i=idx[x.ref];if(i!=null&&out[i])out[i]=Object.assign({},out[i],x.set)}
+    else{idx[x.id]=out.length;out.push(Object.assign({},x))}}
+  return out.filter(Boolean)}
+function outcome(T,e){if(e.f==="RE")return"us";if(e.f==="RP")return"them";const t=T[e.f];return t&&t[e.r]||null}
+function pmap(m){const o={};(m.players||[]).forEach(p=>o[p.id]=p);return o}
+function pname(P,id){const p=P[id];return p?"#"+p.num+" "+p.name:"un jugador que ya no está"}
+
+/* replay: la única función que calcula el estado. ctx[id] = foto del contexto de cada jugada. */
+/* Rotación = posición (1-6) del colocador. rot[0] es P1 … rot[5] es P6. */
+const BACK=[0,4,5];
+function validLineup(L){return!!(L&&Array.isArray(L.p)&&L.p.length===6&&L.p.every(Boolean)&&new Set(L.p).size===6)}
+function rotN(st){return st.rot&&st.setter&&st.rot.includes(st.setter)?st.rot.indexOf(st.setter)+1:null}
+/* Quién está de verdad en pista: el líbero entra por el central de zaguera, salvo cuando ese central saca */
+function courtOf(P,st){if(!st.rot)return null;const c=st.rot.slice();let libAt=-1;
+  if(st.lib){const i=BACK.find(i=>{const p=P[c[i]];return p&&p.pos==="CEN"&&!(i===0&&st.serving==="us")});if(i!=null){libAt=i;c[i]=st.lib}}
+  return{c,libAt,out:libAt>=0?st.rot[libAt]:null}}
+/* Normas FIVB de cambios. Devuelve avisos; nunca bloquea. */
+function subIssues(P,st,e,max){const out=[],nm=id=>pname(P,id);
+  if(!st.rot){out.push("Este set no tiene alineación: el cambio no se puede comprobar");return out}
+  if(!e.pout||!e.pin){out.push("Falta saber quién sale o quién entra");return out}
+  if(!st.rot.includes(e.pout))out.push(`${nm(e.pout)} no está en pista`);
+  if(st.rot.includes(e.pin))out.push(`${nm(e.pin)} ya está en pista`);
+  if(st.libs.includes(e.pin)||st.libs.includes(e.pout))out.push("El líbero no entra ni sale con un cambio normal");
+  if(st.subs+1>max)out.push(`Es el cambio ${st.subs+1} del set: el máximo son ${max}`);
+  if(st.closed.has(e.pout))out.push(`${nm(e.pout)} ya hizo su salida y su vuelta en este set`);
+  else if(st.closed.has(e.pin))out.push(`${nm(e.pin)} ya entró y salió en este set`);
+  else{const po=st.pair[e.pout],pi=st.pair[e.pin];
+    if(po&&po!==e.pin)out.push(`${nm(e.pout)} solo puede cambiarse por ${nm(po)}`);
+    if(pi&&pi!==e.pout)out.push(`${nm(e.pin)} solo puede volver por ${nm(pi)}`);
+    if(!po&&!pi&&!st.starters.has(e.pout)&&st.rot.includes(e.pout))out.push(`${nm(e.pout)} no era titular: solo puede salir por quien sustituyó`)}
+  return out}
+function applySub(st,e){const i=st.rot?st.rot.indexOf(e.pout):-1;if(i<0)return;st.rot[i]=e.pin;if(st.setter===e.pout)st.setter=e.pin;st.subs++;
+  const po=st.pair[e.pout];if(po&&po===e.pin){st.closed.add(e.pout);st.closed.add(e.pin)}else if(!po&&!st.pair[e.pin]){st.pair[e.pout]=e.pin;st.pair[e.pin]=e.pout}}
+function replay(m){
+  const P=pmap(m),T=m.table||DEFAULT_TABLE,ctx={},issues=[],sets=[];let wonUs=0,wonThem=0;const need=Math.ceil(m.bestOf/2);const max=m.maxSubs||6;
+  m.sets.forEach((set,si)=>{
+    const tgt=si===m.bestOf-1?m.tie:m.pts;const L=validLineup(set.lineup)?set.lineup:null;
+    const st={first:set.first,us:0,them:0,serving:set.first,to:{us:0,them:0},done:false,winner:null,rally:1,rallies:[],evs:[],issues:[],
+      lineup:L,rot:L?L.p.slice():null,setter:L&&L.p.includes(L.setter)?L.setter:null,libs:L?(L.libs||[]).filter(id=>id&&!L.p.includes(id)).slice(0,2):[],lib:null,
+      subs:0,pair:{},closed:new Set(),starters:new Set(L?L.p:[]),gap:0};
+    st.lib=st.libs[0]||null;
+    let cur=null;const onCourt=()=>{const c=courtOf(P,st);return c?c.c.slice():null};
+    const newRally=()=>({n:st.rally,sv:st.serving,rot:rotN(st),court:onCourt(),us:st.us,them:st.them,evs:[],win:null,recQ:null,trans:false,atk:0});cur=newRally();
+    const iss=(e,msg)=>{const x={set:si,rally:cur.n,evId:e?e.id:null,msg};st.issues.push(x);issues.push(x)};
+    let extra=false;
+    for(const e of effective(set)){
+      const court=courtOf(P,st);
+      const c={set:si,rally:cur.n,us:st.us,them:st.them,sv:st.serving,rot:rotN(st),court:court&&court.c,win:null,extra:false,cx:null,ph:st.serving==="us"?"BP":"SO"};ctx[e.id]=c;st.evs.push(e);
+      if(st.done){c.extra=true;if(!extra){extra=true;iss(e,`El set ya había acabado ${st.us}-${st.them}: sobran las jugadas desde aquí`)}continue}
+      if(e.f==="T"){st.to[e.side]++;if(st.to[e.side]>2)iss(e,`Tercer tiempo muerto ${e.side==="us"?"nuestro":"del rival"}: solo hay 2 por set`);continue}
+      if(e.f==="SUB"){subIssues(P,st,e,max).forEach(msg=>iss(e,msg));applySub(st,e);continue}
+      if(e.f==="LIB"){if(!st.libs.includes(e.p))iss(e,`${pname(P,e.p)} no está apuntado como líbero en este set`);else st.lib=e.p;continue}
+      /* Puntos sin apuntar (desde el banquillo, cuando te toca jugar): salta el marcador; esos rallies no entran en side-out, break ni +/− */
+      if(e.f==="GAP"){let a=+e.us||0,b=+e.them||0;
+        if(a<st.us||b<st.them){iss(e,`El marcador ${a}-${b} es menor que el que ya había (${st.us}-${st.them}): se deja en ${Math.max(a,st.us)}-${Math.max(b,st.them)}`);a=Math.max(a,st.us);b=Math.max(b,st.them)}
+        {const hi=Math.max(a,b),lo=Math.min(a,b);if(hi>Math.max(tgt,lo+2))iss(e,`El marcador ${a}-${b} no puede darse en un set a ${tgt}`)}
+        const n=(a-st.us)+(b-st.them);c.gap=n;st.gap+=n;st.us=a;st.them=b;st.rally+=n;
+        if(e.sv==="us"||e.sv==="them")st.serving=e.sv;
+        if(e.p1&&st.rot&&st.rot.includes(e.p1)){let k=0;while(st.rot[0]!==e.p1&&k++<6)st.rot.push(st.rot.shift())}
+        if(Math.max(st.us,st.them)>=tgt&&Math.abs(st.us-st.them)>=2){st.done=true;st.winner=st.us>st.them?"us":"them"}
+        cur=newRally();continue}
+      if(ACT.includes(e.f)){
+        if(e.f==="S"&&st.serving==="them")iss(e,"Saque nuestro en un rally en el que sacaba el rival");
+        if(e.f==="R"&&st.serving==="us")iss(e,"Recepción nuestra en un rally en el que sacábamos nosotros");
+        if(e.p&&!P[e.p])iss(e,"La jugada es de un jugador que no está en el partido");
+        else if(e.p&&court){
+          const isL=st.libs.includes(e.p);
+          if(!court.c.includes(e.p))iss(e,`${pname(P,e.p)} no está en pista${isL?(st.lib!==e.p?": el líbero en pista es el otro (usa «Cambiar líbero»)":": el central al que sustituye estaba sacando"):""}`);
+          if(isL&&(e.f==="S"||e.f==="B"))iss(e,`El líbero no puede ${e.f==="S"?"sacar":"bloquear"}`);
+          if(e.f==="S"&&st.serving==="us"&&st.rot[0]!==e.p)iss(e,`Saca ${pname(P,e.p)}, pero en P1 está ${pname(P,st.rot[0])}: ¿falta un cambio o la rotación?`);
+        }
+        /* Complejo del ataque: K1 tras nuestra recepción sin defensa ni bloqueo de por medio; K2 el resto */
+        if(e.f==="R")cur.recQ=e.r;
+        if(e.f==="A"){c.cx=cur.sv==="them"&&!cur.trans?(cur.recQ==null?"K1?":["#","+"].includes(cur.recQ)?"K1+":"K1-"):"K2";cur.trans=true}
+        if(e.f==="S"||e.f==="D"||e.f==="B")cur.trans=true;
+      }
+      if(!cur.evs.length){cur.rot=rotN(st);cur.court=onCourt()}
+      cur.evs.push(e);
+      const w=outcome(T,e);
+      if(w){c.win=w;cur.win=w;cur.winF=e.f;cur.winCx=c.cx;st.rallies.push(cur);
+        if(w!==st.serving){if(w==="us"&&st.rot)st.rot.push(st.rot.shift());st.serving=w}
+        st[w]++;st.rally++;
+        if(Math.max(st.us,st.them)>=tgt&&Math.abs(st.us-st.them)>=2){st.done=true;st.winner=st.us>st.them?"us":"them"}
+        cur=newRally()}
+    }
+    st.curRally=cur;st.court=courtOf(P,st);st.rotN=rotN(st);
+    if(st.done)st.winner==="us"?wonUs++:wonThem++;
+    else if(si<m.sets.length-1)iss(null,`El set ${si+1} no ha acabado (${st.us}-${st.them}) y ya hay un set ${si+2}`);
+    sets.push(st);
+  });
+  const finished=wonUs>=need||wonThem>=need;const ci=sets.length-1;const cur=sets[ci];
+  return{sets,wonUs,wonThem,finished,ci,cur,serving:cur.serving,need,ctx,issues};
+}
+function touch(m){m.updatedAt=Date.now();const r=replay(m);m.status=r.finished?"done":"live";if(!m.example)markDirty("m_"+m.id);saveLocal();if(share&&share.mid===m.id)livePush()}
+function locked(r){return r.finished||r.cur.done}
+/* Modo rápido: solo se apunta cómo acaba cada rally (m.detail==="rapido"). replay() no cambia. */
+const isQuick=m=>!!m&&m.detail==="rapido";
+const QUICK_ORDER=["A","B","S","R","D","E","X"];
+const closing=(T,k)=>FUND[k].o.filter(o=>k==="X"||(T[k]&&T[k][o[0]]));
+/* Fundamento más probable según la fase del rally: saque o recepción al empezar, defensa como 1.er toque en transición, ataque tras recepción, colocación o defensa */
+const ORDERS={S:["S","D","B","A","E","R","X"],R:["R","E","A","D","B","S","X"],A:["A","E","D","B","R","S","X"],D:["D","B","A","E","R","S","X"]};
+function predict(r){const st=r.cur,rl=st.curRally;const last=rl&&rl.evs.length?rl.evs[rl.evs.length-1]:null;
+  if(!last)return st.serving==="us"?"S":"R";
+  return{S:"D",R:"A",E:"A",A:"D",B:"D",D:"A"}[last.f]||"D"}
+function addEvent(m,ev){ui.qz=null;const r=replay(m);if(locked(r))return null;ev.k="ev";ev.id=newId();ev.t=Date.now();
+  {const v=vEl();if(vid.url&&!vid.bad&&vid.mid===m.id&&v&&v.readyState>=1&&isFinite(v.currentTime))ev.vt=Math.round(v.currentTime*10)/10}m.sets[r.ci].log.push(ev);touch(m);return ev}
+/* Corregir: siempre añadiendo al log. Devuelve el primer aviso del set tras el cambio, o null si cuadra. */
+function amend(m,si,entry){const key=x=>x.msg+"|"+(x.evId||"");const before=new Set(replay(m).sets[si].issues.map(key));entry.id=newId();entry.t=Date.now();m.sets[si].log.push(entry);touch(m);
+  const after=replay(m).sets[si].issues,fresh=after.filter(x=>!before.has(key(x)));return{issue:fresh[0]||null,left:after.length,worse:fresh.length>0}}
+/* Texto tras corregir: solo culpa a la corrección de los avisos que ha creado ella */
+function amendMsg(res,si,what){if(res.issue)return`${what}. ${res.issue.evId?`El set ${si+1} deja de cuadrar en el rally ${res.issue.rally}`:`El set ${si+1} no cuadra: ${res.issue.msg}`}`;
+  return res.left?`${what}. El set sigue con ${nn(res.left,"aviso","avisos")} de antes`:`${what}. El set cuadra`}
+function lastEvent(m,si){const ev=effective(m.sets[si]);return ev[ev.length-1]||null}
+/* Deshacer por pasos: quita la última jugada vigente y, si era de un jugador, reabre su panel con lo que se había marcado */
+function undoStep(m){ui.qz=null;const r=replay(m);const ci=r.ci;
+  /* Si lo último que se hizo (en cualquier set) fue borrar o corregir una jugada, se anula eso */
+  /* (solo correcciones hechas a mano después de la última jugada apuntada; los borrados del propio «Deshacer» llevan u:1) */
+  let fix=null,fixSi=-1,lastT=-1,evT=-1;m.sets.forEach(s=>s.log.forEach(x=>{if(x.k==="ev")evT=Math.max(evT,x.t||0)}));
+  m.sets.forEach((s,si)=>{const undone=new Set(s.log.filter(x=>x.k==="undo").map(x=>x.ref));
+    s.log.forEach(x=>{if((x.k==="del"||x.k==="edit")&&!x.u&&!undone.has(x.id)&&(x.t||0)>evT&&(x.t||0)>=lastT){lastT=x.t||0;fix=x;fixSi=si}})});
+  if(fix){m.sets[fixSi].log.push({k:"undo",id:newId(),t:Date.now(),ref:fix.id});touch(m);return{msg:fix.k==="del"?"Deshecho: la jugada borrada vuelve":"Deshecho: se quita la corrección"}}
+  const last=lastEvent(m,ci);
+  if(!last){if(m.sets.length>1){m.sets.pop();m.setsCut={len:m.sets.length,t:Date.now()};touch(m);return{msg:"Set "+(ci+1)+" quitado"}}return null}
+  m.sets[ci].log.push({k:"del",id:newId(),t:Date.now(),ref:last.id,u:1});touch(m);
+  if(ACT.includes(last.f))return{reopen:{mode:last.p||last.f!=="X"?"new":"fault",p:last.p||null,prev:{f:last.f,r:last.r},zS:last.f==="S"&&last.z||null,zA:last.f==="A"&&last.z||null,zo:last.f==="A"&&last.zo||null},msg:"Deshecho: elige otra vez o cierra"};
+  return{msg:"Deshecho: "+evLabel(last,pmap(m)).toLowerCase()}}
+function startSet(m,first){const r=replay(m);if(!r.cur.done||r.finished)return;m.sets.push({first,lineup:null,log:[],t:Date.now()});touch(m)}
+
+/* ---------- Alineación y cambios ---------- */
+/* Propuesta 5-1 a partir de las posiciones: P1 colocador, P2 receptor, P3 central, P4 opuesto, P5 receptor, P6 central */
+function proposeLineup(m){const pl=sheetPlayers(m);const take=pos=>{const i=pl.findIndex(p=>pos.includes(p.pos));return i<0?null:pl.splice(i,1)[0].id};
+  const libs=[];for(let k=0;k<2;k++){const id=take(["LIB"]);if(id)libs.push(id)}
+  const p=[take(["COL"]),take(["REC"]),take(["CEN"]),take(["OPU","UNI"]),take(["REC"]),take(["CEN"])];
+  for(let i=0;i<6;i++)if(!p[i]){const q=pl.find(x=>x.pos!=="LIB");if(q){p[i]=q.id;pl.splice(pl.indexOf(q),1)}}
+  return{p,setter:p[0],libs}}
+function openLineup(m,si){let base,first;
+  if(si==="new"){const last=m.sets[m.sets.length-1];base=last.lineup&&validLineup(last.lineup)?clone(last.lineup):null;first=last.first==="us"?"them":"us"}
+  else{const set=m.sets[si];base=set.lineup?clone(set.lineup):null;first=set.first}
+  if(!base)base=proposeLineup(m);
+  ui.lu={si,first,p:(base.p||[]).concat([null,null,null,null,null,null]).slice(0,6),setter:base.setter||null,libs:(base.libs||[]).slice(0,2)};go("lineup")}
+/* Prueba un cambio sin guardarlo y devuelve los avisos FIVB que daría */
+function trySub(m,ev){const si=replay(m).ci;m.sets[si].log.push(Object.assign({k:"ev",id:"__try",t:0},ev));const r=replay(m);m.sets[si].log.pop();return r.issues.filter(x=>x.evId==="__try").map(x=>x.msg)}
+
+/* ---------- Partido de ejemplo ---------- */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function makeExample(){
+  const rnd=mulberry32(11);
+  const pl=[[3,"Laia","COL"],[4,"Marta","REC"],[7,"Clara","OPU"],[9,"Núria","REC"],[11,"Paula","CEN"],[14,"Irene","CEN"],[5,"Ona","LIB"],[8,"Aina","LIB"],[16,"Júlia","REC"],[12,"Sara","CEN"]].map(([num,name,pos])=>({id:"ex"+num,num,name,pos}));
+  const LU={p:["ex3","ex4","ex14","ex7","ex9","ex11"],setter:"ex3",libs:["ex5","ex8"]};
+  const m={id:"ejemplo",v:2,exV:makeExample.V,example:true,rival:"CV Riudoms",date:"2026-11-01",comp:"Partido de ejemplo",bestOf:5,pts:25,tie:15,maxSubs:6,table:clone(DEFAULT_TABLE),players:pl,sets:[{first:"us",lineup:clone(LU),log:[]}],status:"live",updatedAt:Date.now()};
+  const P=pmap(m);const pick=arr=>arr[Math.floor(rnd()*arr.length)];
+  const bias=[.56,.44,.57,.52];let n=0;
+  const push=e=>{const r=replay(m);e.k="ev";e.id="e"+(n++).toString(36);e.t=Date.now()-((420-n)*25000);m.sets[r.ci].log.push(e)};
+  const onc=(r,pos,zones)=>{const c=r.cur.court.c;const ids=(zones||[0,1,2,3,4,5]).map(i=>c[i]).filter(id=>pos.includes(P[id].pos));return ids.length?ids:[c[1]]};
+  for(let guard=0;guard<700;guard++){
+    let r=replay(m);if(r.finished)break;
+    if(r.cur.done){const L=clone(LU);if(r.ci===1){L.p=L.p.slice(2).concat(L.p.slice(0,2))}m.sets.push({first:r.ci%2?"us":"them",lineup:L,log:[]});continue}
+    if(r.ci===3&&r.cur.us+r.cur.them>=33)break;
+    const tot=r.cur.us+r.cur.them;
+    /* cambios de ejemplo: set 2, Júlia por Núria y vuelta; set 3, cambio de líbero y Sara por Irene */
+    if(r.ci===1&&tot===12&&r.cur.rot.includes("ex9"))push({f:"SUB",pout:"ex9",pin:"ex16"});
+    if(r.ci===1&&tot===21&&r.cur.rot.includes("ex16"))push({f:"SUB",pout:"ex16",pin:"ex9"});
+    if(r.ci===2&&tot===8&&r.cur.lib==="ex5")push({f:"LIB",p:"ex8"});
+    if(r.ci===2&&tot===15&&r.cur.rot.includes("ex14"))push({f:"SUB",pout:"ex14",pin:"ex12"});
+    if(r.ci===0&&tot===16&&r.cur.to.them===0)push({f:"T",side:"them"});
+    if(r.ci===1&&tot===19&&r.cur.to.us===0)push({f:"T",side:"us"});
+    r=replay(m);
+    const b=bias[r.ci]||.5;const sv=r.cur.rot[0];
+    if(r.serving==="us"){const x=rnd();
+      if(x<.07){push({p:sv,f:"S",r:"#"});continue}
+      if(x<.19){push({p:sv,f:"S",r:"="});continue}
+      push({p:sv,f:"S",r:rnd()<.4?"+":"!"});
+      if(rnd()<.35)push({p:pick(onc(r,["LIB","REC","OPU","COL","CEN"],[0,4,5])),f:"D",r:rnd()<.3?"#":"+"});
+    }else{const rc=pick(onc(r,["REC","LIB"],[0,4,5,1,2,3]));const x=rnd();
+      if(x<.07){push({p:rc,f:"R",r:"="});continue}
+      push({p:rc,f:"R",r:x<.35?"#":x<.72?"+":"-"});
+    }
+    if(rnd()<b){const y=rnd();
+      if(y<.62)push({p:pick(onc(r,["OPU","REC","CEN"],[1,2,3])),f:"A",r:"#"});
+      else if(y<.76)push({p:pick(onc(r,["CEN","OPU","REC"],[1,2,3])),f:"B",r:"#"});
+      else push({p:null,f:"RE",r:"="});
+    }else{const y=rnd();
+      if(y<.24)push({p:pick(onc(r,["OPU","REC","CEN"],[1,2,3])),f:"A",r:"="});
+      else if(y<.38)push({p:pick(onc(r,["OPU","REC"],[1,2,3])),f:"A",r:"/"});
+      else if(y<.52)push({p:pick(onc(r,["LIB","REC"],[0,4,5])),f:"D",r:"="});
+      else if(y<.58)push({p:pick(onc(r,["CEN"],[1,2,3])),f:"X",r:"r"});
+      else if(y<.62)push({p:r.cur.setter,f:"E",r:"="});
+      else push({p:null,f:"RP",r:"#"});
+    }
+  }
+  m.status=replay(m).finished?"done":"live";
+  return m;
+}
+makeExample.V=3;
+
+/* ---------- Fusión de partidos (sincronización y copias) ----------
+   Une los logs por id en vez de quedarse con el partido más reciente entero: no se pierde ninguna jugada.
+   Pensado para un mismo entrenador que usa un dispositivo y luego otro, no para dos anotadores a la vez. */
+function mergeMatch(a,b){if(!a)return clone(b);if(!b)return clone(a);
+  const nw=(b.updatedAt||0)>(a.updatedAt||0)?b:a,od=nw===a?b:a,out=clone(nw);
+  out.sets=nw.sets.map((s,i)=>{const o=od.sets[i],ns=clone(s);if(!o)return ns;const seen=new Set(ns.log.map(x=>x.id));const extra=o.log.filter(x=>!seen.has(x.id));
+    if(extra.length){ns.log=ns.log.concat(clone(extra));ns.log.sort((x,y)=>(x.t||0)-(y.t||0))}return ns});
+  for(let i=out.sets.length;i<od.sets.length;i++)if(od.sets[i].log.length)out.sets.push(clone(od.sets[i]));
+  /* Un set quitado con «Deshacer» no vuelve con la otra copia, salvo que tenga jugadas apuntadas después de quitarlo */
+  const cut=[a.setsCut,b.setsCut].filter(Boolean).sort((x,y)=>(y.t||0)-(x.t||0))[0];
+  if(cut){out.setsCut=clone(cut);while(out.sets.length>Math.max(1,cut.len)&&(out.sets[out.sets.length-1].t||0)<=cut.t&&out.sets[out.sets.length-1].log.every(x=>(x.t||0)<=cut.t))out.sets.pop()}
+  /* Datos del partido (rival, fecha, competición…): gana la copia que los editó más tarde (metaAt), no la que tiene más jugadas */
+  const ma=a.metaAt||0,mb=b.metaAt||0;if(ma!==mb){const src=ma>mb?a:b;META.forEach(k=>{if(src[k]===undefined)delete out[k];else out[k]=clone(src[k])});out.metaAt=Math.max(ma,mb)}
+  const ids=new Set((out.players||[]).map(p=>p.id));(od.players||[]).forEach(p=>{if(!ids.has(p.id))out.players.push(clone(p))});
+  out.updatedAt=Math.max(a.updatedAt||0,b.updatedAt||0);return out}
+const META=["rival","date","comp","noSeason","zones","detail","video"];
+const metaOf=m=>JSON.stringify(META.map(k=>m[k]===undefined?null:m[k]));
+const sameMatch=(a,b)=>JSON.stringify(a.sets)===JSON.stringify(b.sets)&&JSON.stringify(a.players)===JSON.stringify(b.players)&&metaOf(a)===metaOf(b);
+
+/* ---------- Sincronización con la cuenta ---------- */
+let db=null,col=null,syncState="local";const dirty=new Set();let flushT=null,flushing=false;
+function setSync(s){syncState=s;const el=$("#sync");if(el){el.dataset.s=s;el.lastChild.textContent=syncLabel()}}
+function syncLabel(){return{local:" Guardado en este dispositivo",cloud:" Guardado en tu cuenta",offline:" Sin conexión: se subirá luego",error:" No se pudo guardar en la cuenta"}[syncState]}
+function markDirty(k){dirty.add(k);if(!db)return;clearTimeout(flushT);flushT=setTimeout(flush,1200)}
+function docBody(k){if(k==="team")return{kind:"team",data:S.team,updatedAt:S.team.updatedAt};
+  const id=k.slice(2);if(S.deleted[id])return{kind:"match",deleted:true,updatedAt:S.deleted[id]};
+  const m=S.matches[id];return m?{kind:"match",data:m,updatedAt:m.updatedAt}:null}
+async function flush(){if(!col||flushing)return;flushing=true;let failed=false;
+  try{while(dirty.size){const k=dirty.values().next().value;dirty.delete(k);const body=docBody(k);if(!body)continue;
+    try{await col.doc(k).set(body)}catch(e){dirty.add(k);failed=true;setSync(e&&e.code==="unavailable"?"offline":"error");break}}}
+  finally{flushing=false}
+  if(dirty.size){clearTimeout(flushT);flushT=setTimeout(flush,failed?10000:1200)}else setSync("cloud")}
+async function connect(){
+  if(!window.claude||typeof window.claude.use!=="function")return;
+  try{const[d,u]=await Promise.all([window.claude.use("db"),window.claude.use("user")]);if(!d||!u)return;
+    const id=await u.id();if(!id)return;const c=d.collection("data/users/"+id);
+    const snap=await c.limit(1000).get();const remote={};snap.docs.forEach(doc=>{remote[doc.id]=doc.data()});
+    const rt=remote.team;
+    if(rt&&rt.data&&(rt.updatedAt||0)>(S.team.updatedAt||0)){S.team=clone(rt.data);S.team.players=cleanPlayers(S.team.players);if(!S.team.table)S.team.table=clone(DEFAULT_TABLE)}
+    else if(S.team.updatedAt&&(!rt||(rt.updatedAt||0)<S.team.updatedAt))dirty.add("team");
+    for(const k in remote){if(!k.startsWith("m_"))continue;const r=remote[k];const mid=k.slice(2);const loc=S.matches[mid];
+      if(r.deleted){if(loc&&(loc.updatedAt||0)<=r.updatedAt)delete S.matches[mid];S.deleted[mid]=Math.max(S.deleted[mid]||0,r.updatedAt);continue}
+      if(S.deleted[mid]&&S.deleted[mid]>=(r.updatedAt||0)){dirty.add(k);continue}
+      if(!r.data)continue;const rm=normalizeMatch(clone(r.data));
+      if(!loc){S.matches[mid]=rm;continue}
+      const mg=mergeMatch(loc,rm);if(!sameMatch(mg,loc)||mg.updatedAt!==loc.updatedAt){mg.status=replay(mg).finished?"done":"live";S.matches[mid]=mg}
+      if(!sameMatch(mg,rm)||(loc.updatedAt||0)>(r.updatedAt||0))dirty.add(k)}
+    for(const mid in S.matches){const m=S.matches[mid];if(!m.example&&!remote["m_"+mid])dirty.add("m_"+mid)}
+    for(const mid in S.deleted){if(!remote["m_"+mid])dirty.add("m_"+mid)}
+    db=d;col=c;saveLocal();setSync("cloud");if(share)livePush(true);if(!ui.liveId||!S.matches[ui.liveId])pickLive();render();if(dirty.size)flush();
+  }catch(e){setSync(e&&e.code==="unavailable"?"offline":"local")}
+}
+/* Si al arrancar no había red, se vuelve a intentar al recuperarla o al volver a la pestaña */
+function reconnect(){if(!col&&!connect.busy){connect.busy=true;connect().finally(()=>{connect.busy=false})}else if(col&&dirty.size)flush()}
+
+/* ---------- Vídeo: apuntar después, viendo la grabación ----------
+   El vídeo se abre desde el dispositivo y no sale de él (ni se guarda: es demasiado grande). Cada jugada apuntada con el vídeo abierto guarda vt = segundo del vídeo. */
+const vid={url:null,name:"",mid:null,auto:true,hold:false};
+const fsec=t=>{t=Math.max(0,Math.floor(+t||0));const h=Math.floor(t/3600),mi=Math.floor(t/60)%60,se=t%60;return(h?h+":"+String(mi).padStart(2,"0"):mi)+":"+String(se).padStart(2,"0")};
+const vEl=()=>document.getElementById("vid");
+function vidLoad(file,m){if(vid.url)URL.revokeObjectURL(vid.url);vid.url=URL.createObjectURL(file);vid.name=file.name;vid.mid=m.id;vid.bad=false;renderVid(true);render()}
+/* El partido recuerda el vídeo solo cuando se ha podido abrir */
+function vidOk(){vid.bad=false;const m=S.matches[vid.mid];if(m&&!m.example&&(!m.video||m.video.name!==vid.name)){m.video={name:vid.name};m.metaAt=Date.now();touch(m)}}
+function vidClose(){const v=vEl();if(v)v.pause();if(vid.url)URL.revokeObjectURL(vid.url);vid.url=null;vid.mid=null;renderVid(true);render()}
+function vidOn(){return!!(vid.url&&ui.view==="live"&&vid.mid===ui.liveId)}
+function renderVid(rebuild){const box=document.getElementById("vidbox");if(!box)return;const on=vidOn();
+  if(!on){const v=vEl();if(v&&!v.paused)v.pause();box.hidden=true;if(rebuild)box.innerHTML="";return}
+  box.hidden=false;if(!rebuild&&vEl())return;
+  box.innerHTML=`<video id="vid" src="${vid.url}" controls playsinline preload="metadata"></video>
+    <div class="vctl"><button class="btn sm" data-act="vskip" data-d="-10" aria-label="Atrás 10 segundos">−10</button><button class="btn sm" data-act="vskip" data-d="-3" aria-label="Atrás 3 segundos">−3</button><button class="btn sm primary" data-act="vplay" aria-label="Reproducir o pausar">⏯</button><button class="btn sm" data-act="vskip" data-d="3" aria-label="Adelante 3 segundos">+3</button><button class="btn sm" data-act="vskip" data-d="10" aria-label="Adelante 10 segundos">+10</button><button class="btn sm" data-act="vrate" aria-label="Velocidad">1×</button>
+    <label class="small row" style="gap:6px"><input type="checkbox" id="vauto" ${vid.auto?"checked":""}> Pausar al apuntar</label><button class="btn sm" data-act="vclose" style="margin-left:auto">Quitar vídeo</button></div>
+    <p class="small" id="vid-err" style="margin:0;color:var(--bad)" hidden></p>`;
+  const v=vEl();if(v){v.addEventListener("loadedmetadata",vidOk);v.addEventListener("error",()=>{vid.bad=true;const p=document.getElementById("vid-err");if(p){p.hidden=false;p.textContent="No se puede reproducir este vídeo aquí. Puede ser el formato (prueba con un MP4 grabado con el móvil) o que este navegador no deje abrir vídeos dentro de la página. Puedes seguir apuntando sin vídeo."}})}}
+function vidHold(){const v=vEl();if(vidOn()&&vid.auto&&v&&!v.paused){v.pause();vid.hold=true}}
+function vidRelease(){if(!vid.hold)return;vid.hold=false;const v=vEl();if(v&&vidOn())v.play().catch(()=>{})}
+function videoZone(m){if(vid.url&&vid.mid===m.id)return"";
+  return`<div class="zone"><div class="row spread"><p class="hand">Apuntar con vídeo</p>${m.video?`<span class="muted small">Vídeo de este partido: ${esc(m.video.name)}</span>`:""}</div>
+    <p class="muted small" style="margin:0">Si has grabado el partido (por ejemplo, con el móvil en un trípode mientras jugabas), ábrelo aquí y apunta viéndolo. Cada jugada queda enlazada a su segundo del vídeo. El vídeo no sale de este dispositivo.</p>
+    <label class="btn sm" style="align-self:flex-start">Abrir el vídeo<input type="file" id="vid-file" accept="video/*" hidden></label></div>`}
+
+/* ---------- Pasar un partido a otro emPat (entrenador, otro móvil) ---------- */
+function matchFileText(m){return JSON.stringify({app:"empat-data",v:2,kind:"partido",savedAt:Date.now(),team:{name:S.team.name,players:clone(m.players||[])},matches:{[m.id]:m}},null,1)}
+const slug=t=>String(t||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+/* Jugadores de otro dispositivo: mismo dorsal que uno de mi plantilla con distinto id -> se usa mi id */
+function numMap(players){const byNum={},known=new Set(S.team.players.map(p=>p.id)),map={};S.team.players.forEach(p=>byNum[+p.num]=p.id);
+  (players||[]).forEach(p=>{if(!known.has(p.id)&&byNum[+p.num]&&byNum[+p.num]!==p.id)map[p.id]=byNum[+p.num]});return map}
+function remapIds(m,map){if(!Object.keys(map).length)return m;const f=id=>id&&map[id]||id;
+  (m.players||[]).forEach(p=>{p.id=f(p.id)});if(m.roster)m.roster=m.roster.map(f);
+  m.sets.forEach(s=>{if(s.lineup){s.lineup.p=(s.lineup.p||[]).map(f);s.lineup.setter=f(s.lineup.setter);s.lineup.libs=(s.lineup.libs||[]).map(f)}
+    s.log.forEach(x=>{const o=x.k==="edit"?x.set:x;if(!o)return;["p","pin","pout","p1"].forEach(k=>{if(o[k])o[k]=f(o[k])})})});return m}
+
+/* ---------- Directo de solo lectura ----------
+   El entrenador comparte un código; quien lo tiene ve el marcador, las jugadas y las cifras desde su móvil, sin poder cambiar nada.
+   Se guarda en live/<id del entrenador> cifrado con AES-GCM: la clave va solo en el código, así que la base de datos (y quien la liste) solo ve texto cifrado.
+   Salen los dorsales; los nombres solo si el entrenador lo elige. Caduca a las 12 horas y se borra al parar. */
+const LIVE_KEY=LS_KEY+"-directo",LIVE_H=12;
+const b64u={enc:u8=>{let t="";for(let i=0;i<u8.length;i++)t+=String.fromCharCode(u8[i]);return btoa(t).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"")},
+  dec:x=>{x=String(x).replace(/-/g,"+").replace(/_/g,"/");x+="=".repeat((4-x.length%4)%4);const t=atob(x),u=new Uint8Array(t.length);for(let i=0;i<t.length;i++)u[i]=t.charCodeAt(i);return u}};
+const aesKey=(raw,use)=>crypto.subtle.importKey("raw",raw,"AES-GCM",false,[use]);
+async function seal(obj,key){const iv=crypto.getRandomValues(new Uint8Array(12));const ct=await crypto.subtle.encrypt({name:"AES-GCM",iv},await aesKey(b64u.dec(key),"encrypt"),new TextEncoder().encode(JSON.stringify(obj)));return{iv:b64u.enc(iv),ct:b64u.enc(new Uint8Array(ct))}}
+async function unseal(d,key){const pt=await crypto.subtle.decrypt({name:"AES-GCM",iv:b64u.dec(d.iv)},await aesKey(b64u.dec(key),"decrypt"),b64u.dec(d.ct));return JSON.parse(new TextDecoder().decode(pt))}
+let share=null;try{share=JSON.parse(localStorage.getItem(LIVE_KEY))||null}catch(e){}
+let shareErr=null,shareAt=0,shareT=null;
+function shareSave(){try{if(share)localStorage.setItem(LIVE_KEY,JSON.stringify(share));else localStorage.removeItem(LIVE_KEY)}catch(e){}}
+const shareCode=()=>share?share.uid+"."+share.key:"";
+/* Lo que ve quien sigue el directo. Sin nombres, cada jugador es su dorsal. */
+function liveSnapshot(m){const r=replay(m),T=m.table||DEFAULT_TABLE,names=!!share.names;
+  const P={};(m.players||[]).forEach(p=>P[p.id]={...p,name:names?String(p.name||"").trim():""});
+  const who=p=>p?("#"+p.num+(p.name?" "+p.name:"")):"";
+  const st=computeStats(gather([m],"all")),t=st.team;const all=[];r.sets.forEach(x=>x.evs.forEach(e=>all.push(e)));
+  const plays=all.filter(e=>!(r.ctx[e.id]||{}).extra).slice(-12).reverse().map(e=>{const c=r.ctx[e.id]||{};const[sym,cls]=evSym(e,T);
+    return{sc:e.f==="GAP"?e.us+"-"+e.them:(c.us+(c.win==="us"?1:0))+"-"+(c.them+(c.win==="them"?1:0)),sym,cls,txt:evLabel(e,P).replace(/\s+·/g," ·").replace(/\s+$/,"")}});
+  const rows=st.rows.filter(x=>x.pid&&(x.pts||x.err||x.S.t||x.R.t||x.A.t||x.B.t||x.D.t)).map(x=>({n:who(P[x.pid]||x.p),pts:x.pts,err:x.err,ace:x.S["#"],atk:x.A.t?x.A["#"]+"/"+x.A.t:"–",blk:x.B["#"],rec:x.R.t?Math.round((x.R["#"]+x.R["+"])*100/x.R.t)+"%":"–"}));
+  return{v:1,team:S.team.name,rival:m.rival,date:m.date,comp:m.comp||"",set:r.ci+1,cur:[r.cur.us,r.cur.them],sv:r.serving,won:[r.wonUs,r.wonThem],fin:r.finished,
+    sets:r.sets.filter(x=>x.us+x.them).map(x=>[x.us,x.them,x.done?x.winner:null]),so:[t.soW,t.soT],br:[t.brW,t.brT],plays,rows,names,t:Date.now()}}
+function livePush(now){if(!share)return;clearTimeout(shareT);if(!now){shareT=setTimeout(()=>livePush(true),1200);return}
+  (async()=>{const m=S.matches[share.mid];if(!m||!db){shareErr=db?"gone":"nodb";paintShare();return}
+    try{const body=await seal(liveSnapshot(m),share.key);await db.doc("live/"+share.uid).set({v:1,iv:body.iv,ct:body.ct,exp:Date.now()+LIVE_H*3600e3,t:Date.now()});shareErr=null;shareAt=Date.now()}
+    catch(e){shareErr=e&&(e.code==="invalid_argument"||e.code==="permission_denied")?"ro":"net"}paintShare()})()}
+async function liveStart(m){if(!db){toast("El directo necesita emPat Data abierto en claude.ai con tu sesión iniciada");return}
+  let uid=null;try{const u=await window.claude.use("user");uid=u&&await u.id()}catch(e){}if(!uid){toast("No se pudo saber quién eres: inicia sesión en claude.ai");return}
+  if(share&&share.uid!==uid)await liveStop(true);
+  share={mid:m.id,uid:sid(uid),key:b64u.enc(crypto.getRandomValues(new Uint8Array(16))),names:false,since:Date.now()};shareSave();shareErr=null;render();livePush(true)}
+async function liveStop(quiet){const x=share;share=null;shareSave();clearTimeout(shareT);if(db&&x)try{await db.doc("live/"+x.uid).delete()}catch(e){}if(!quiet){render();toast("Directo parado: el código ya no sirve")}}
+function paintShare(){const el=document.getElementById("share-st");if(el)el.innerHTML=shareStatus()}
+function shareStatus(){if(shareErr==="ro")return`<span style="color:var(--bad)">Tu acceso a esta app es de solo lectura y no se puede publicar el directo. Pide a quien te la pasó acceso de colaborador.</span>`;
+  if(shareErr==="nodb")return`<span style="color:var(--bad)">Sin conexión con tu cuenta: abre emPat Data en claude.ai con la sesión iniciada.</span>`;
+  if(shareErr==="net")return`<span style="color:var(--mid)">No se pudo enviar la última jugada; se reintenta con la siguiente.</span>`;
+  return shareAt?`Enviado a las ${new Date(shareAt).toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit",second:"2-digit"})}`:"Conectando…"}
+function shareZone(m){if(m.example)return"";const on=share&&share.mid===m.id;
+  if(!on)return`<div class="zone"><div class="row spread"><p class="hand">Directo para el banquillo y las familias</p><button class="btn sm" data-act="livestart" ${db?"":"disabled"}>Compartir en directo</button></div>
+    <p class="muted small" style="margin:0">Quien tenga el código ve el marcador, las jugadas y las cifras en su móvil, sin poder cambiar nada. Salen los dorsales; los nombres de pila, solo si lo eliges. Lo puedes parar cuando quieras y caduca a las ${LIVE_H} horas.${db?"":" Disponible al abrir emPat Data en claude.ai con la sesión iniciada."}${share&&share.mid!==m.id?" Ahora mismo compartes otro partido: al empezar este, aquel se para.":""}</p></div>`;
+  return`<div class="zone" style="box-shadow:inset 0 0 0 2px var(--good)"><div class="row spread"><p class="hand" style="color:var(--good)">● Compartiendo en directo</p><button class="btn sm danger" data-act="livestop">Dejar de compartir</button></div>
+    <label class="f">Código para seguir el partido (pásalo por el grupo)<input type="text" id="share-code" readonly value="${esc(shareCode())}"></label>
+    <div class="row"><button class="btn sm primary" data-act="livecopy">Copiar el código</button><label class="row small" style="gap:6px"><input type="checkbox" id="share-names" ${share.names?"checked":""}> Enseñar los nombres de pila</label></div>
+    <p class="muted small" style="margin:0">${share.names?"Se ve el nombre tal como está en la plantilla: pon solo el nombre de pila.":"Solo dorsales: «#7 · Ataque punto»."} Quien sigue el directo ve el marcador, las últimas jugadas y las cifras por dorsal. El código es la llave: sin él no se puede leer nada.</p>
+    <div class="small muted" id="share-st">${shareStatus()}</div></div>`}
+
+/* Seguir un directo con un código */
+let fol={code:"",unsub:null,data:null,err:null,at:0};
+async function follow(code){code=String(code||"").trim().replace(/\s+/g,"");const i=code.lastIndexOf(".");
+  if(fol.unsub){try{fol.unsub()}catch(e){}fol.unsub=null}
+  fol={code,unsub:null,data:null,err:null,at:0};try{localStorage.setItem(LIVE_KEY+"-sigo",code)}catch(e){}
+  const uid=sid(code.slice(0,i)),key=code.slice(i+1);
+  if(i<1||!uid||!/^[A-Za-z0-9_-]{20,}$/.test(key)){fol.err="code";render();return}
+  let d=db;if(!d)try{d=window.claude&&window.claude.use?await window.claude.use("db"):null}catch(e){}
+  if(!d){fol.err="nodb";render();return}
+  render();
+  fol.unsub=d.doc("live/"+uid).onSnapshot(async snap=>{const x=snap.exists?snap.data():null;
+    if(!x||!x.ct||(x.exp&&x.exp<Date.now())){fol.data=null;fol.err="ended";if(ui.view==="follow")render();return}
+    try{fol.data=await unseal(x,key);fol.err=null;fol.at=x.t||Date.now()}catch(e){fol.data=null;fol.err="key"}if(ui.view==="follow")render()},
+    e=>{fol.err="net";if(ui.view==="follow")render()})}
+function unfollow(){if(fol.unsub){try{fol.unsub()}catch(e){}}fol={code:"",unsub:null,data:null,err:null,at:0};try{localStorage.removeItem(LIVE_KEY+"-sigo")}catch(e){}}
+function viewFollow(){const d0=fol.data,N=x=>+x||0;const d=d0&&{...d0,cur:(d0.cur||[]).map(N),won:(d0.won||[]).map(N),set:N(d0.set),sets:(d0.sets||[]).map(x=>[N(x[0]),N(x[1]),x[2]]),so:(d0.so||[]).map(N),br:(d0.br||[]).map(N),plays:d0.plays||[],rows:d0.rows||[]};let last="";try{last=localStorage.getItem(LIVE_KEY+"-sigo")||""}catch(e){}
+  const form=`<div class="zone"><h2>Seguir un partido en directo</h2><p class="muted small" style="margin:0">Pega el código que te ha pasado el entrenador o quien apunta. Solo se puede mirar: nada de lo que hagas aquí cambia el partido.</p>
+    <label class="f">Código<input type="text" id="fol-code" value="${esc(fol.code||last)}" placeholder="Pega aquí el código" autocomplete="off"></label>
+    <div class="row"><button class="btn primary" data-act="folgo">Seguir</button>${fol.code?`<button class="btn" data-act="folstop">Dejar de seguir</button>`:""}<button class="btn" data-go="live">Volver</button></div></div>`;
+  const msg={code:"Ese código no es válido. Cópialo entero, con el punto del medio.",nodb:"Para seguir un directo abre emPat Data en claude.ai con tu sesión iniciada.",ended:"Este directo no existe o ya ha terminado.",key:"El código no coincide con este directo (quizá se paró y se empezó otro). Pide el código nuevo.",net:"Sin conexión. Se reintentará al volver a la pestaña."};
+  if(!fol.code)return form;
+  if(!d)return form+`<div class="note${fol.err?" warn":""}"><p class="hand">${fol.err?esc(msg[fol.err]):"Conectando con el directo…"}</p></div>`;
+  const ago=Math.max(0,Math.round((Date.now()-fol.at)/1000));
+  return`<div class="row spread"><div><h2>vs ${esc(d.rival)}</h2><div class="muted small">${fdate(d.date)}${d.comp?" · "+esc(d.comp):""} · <span class="tag live">${d.fin?"terminado":"en directo"}</span></div></div><button class="btn sm" data-act="folstop">Dejar de seguir</button></div>
+  <div class="score" role="group" aria-label="Marcador en directo, set ${d.set}">
+    <div class="t us"><span class="tn">${esc(d.team)}</span><span class="n">${d.cur[0]}</span><span class="srv ${d.sv==="us"&&!d.fin?"on":""}">Saque</span><span class="ts">Sets ${d.won[0]}</span></div>
+    <div class="mid"><span class="colon">:</span><span class="setn">Set ${d.set}</span></div>
+    <div class="t them"><span class="tn">${esc(d.rival)}</span><span class="n">${d.cur[1]}</span><span class="srv ${d.sv==="them"&&!d.fin?"on":""}">Saque</span><span class="ts">Sets ${d.won[1]}</span></div></div>
+  <div class="setline">${d.sets.map((x,i)=>`<span class="${x[2]==="us"?"w":x[2]==="them"?"l":""}">S${i+1} ${x[0]}-${x[1]}</span>`).join("")}</div>
+  <div class="muted small" id="fol-ago">Actualizado hace ${ago<60?ago+" s":Math.round(ago/60)+" min"}. Solo lectura.</div>
+  <div class="zone"><div class="figs"><div class="fig"><span class="k">Side-out</span><span class="v">${pct(d.so[0],d.so[1])}</span><span class="s">${d.so[0]} de ${d.so[1]}</span></div><div class="fig"><span class="k">Break point</span><span class="v">${pct(d.br[0],d.br[1])}</span><span class="s">${d.br[0]} de ${d.br[1]}</span></div></div></div>
+  <div class="zone"><p class="hand">Últimas jugadas</p>${d.plays.length?`<ul class="feed">${d.plays.map(x=>`<li><span class="sc">${esc(x.sc)}</span><span class="code ${/^r-(good|bad|mid|neu)$/.test(x.cls)?x.cls:"r-neu"}">${esc(x.sym)}</span><span class="lbl">${esc(x.txt)}</span></li>`).join("")}</ul>`:`<p class="muted">Aún no hay jugadas.</p>`}</div>
+  ${d.rows.length?`<div class="zone"><p class="hand">Por ${d.names?"jugador":"dorsal"}</p><div class="tablebox"><table class="st"><thead><tr><th class="l">${d.names?"Jugador":"Dorsal"}</th><th>Pts</th><th>Err</th><th>Aces</th><th>Ataque</th><th>Bloq</th><th>Rec. pos.</th></tr></thead><tbody>${d.rows.map(x=>`<tr><td class="l"><span class="cl">${esc(x.n)}</span></td><td>${+x.pts||0}</td><td>${+x.err||0}</td><td>${+x.ace||0}</td><td>${esc(x.atk)}</td><td>${+x.blk||0}</td><td>${esc(x.rec)}</td></tr>`).join("")}</tbody></table></div></div>`:""}
+  ${fol.err?`<div class="note warn"><p class="hand">${esc(msg[fol.err]||"")}</p></div>`:""}`}
+
+/* ---------- Imagen para el equipo ---------- */
+function statsImage(){const{season,scope}=statsScope();const st=computeStats(gather(scope,season?"all":ui.statsSet)),t=st.team;
+  const m=season?null:scope[0],r=m?replay(m):null;const rows=st.rows.filter(x=>x.pts||x.err||x.S.t||x.R.t||x.A.t||x.B.t||x.D.t);
+  const W=1080,pad=56,rowH=64,head=season?300:340,H=head+250+90+rows.length*rowH+130;
+  const cv=document.createElement("canvas");cv.width=W;cv.height=H;const g=cv.getContext("2d");
+  const F="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif";
+  const txt=(s,x,y,sz,col,wt,al)=>{g.font=(wt||400)+" "+sz+"px "+F;g.fillStyle=col;g.textAlign=al||"left";g.fillText(s,x,y)};
+  const fit=(s,max,sz,wt)=>{g.font=(wt||400)+" "+sz+"px "+F;if(g.measureText(s).width<=max)return s;while(s.length>1&&g.measureText(s+"…").width>max)s=s.slice(0,-1);return s+"…"};
+  const rr=(x,y,w,h,rad,col)=>{g.fillStyle=col;g.beginPath();g.roundRect?g.roundRect(x,y,w,h,rad):g.rect(x,y,w,h);g.fill()};
+  g.fillStyle="#F2F3F6";g.fillRect(0,0,W,H);rr(0,0,W,head,0,"#0F1B33");
+  txt("em",pad,92,44,"#fff",800);const ew=(g.font=`800 44px ${F}`,g.measureText("em").width);txt("P",pad+ew,92,44,"#FF7A45",800);const pw=g.measureText("P").width;txt("at Data",pad+ew+pw,92,44,"#fff",800);
+  if(season){txt(fit(S.team.name,W-2*pad,64,800),pad,196,64,"#fff",800);txt(fit(`Temporada${compLabel()?" · "+compLabel():""} · ${nn(scope.length,"partido","partidos")}`,W-2*pad,34,500),pad,256,34,"#C9D2E3",500)}
+  else{txt(fit(S.team.name,W-2*pad,34,600),pad,142,34,"#C9D2E3",600);const res=`${r.wonUs}-${r.wonThem} `;g.font=`800 60px ${F}`;const rw=g.measureText(res).width;
+    txt(res,pad,206,60,"#fff",800);txt(fit("vs "+m.rival,W-2*pad-rw,60,800),pad+rw,206,60,"#fff",800);
+    txt(fit(r.sets.filter(x=>x.us+x.them).map(x=>x.us+"-"+x.them).join("   ")+(r.finished?"":"   · en juego"),W-2*pad,36,700),pad,254,36,"#FF7A45",700);
+    txt(fit(fdate(m.date)+(m.comp?" · "+m.comp:"")+(ui.statsSet!=="all"?" · solo el set "+(+ui.statsSet+1):""),W-2*pad,30,500),pad,298,30,"#C9D2E3",500)}
+  const figs=[["Side-out",pct(t.soW,t.soT),`${t.soW} de ${t.soT}`],["Break",pct(t.brW,t.brT),`${t.brW} de ${t.brT}`],["Puntos nuestros",String(t.ours),`+${t.rivalErr} por error rival`],["Errores",String(t.ourErr),"puntos regalados"]];
+  const fw=(W-2*pad-3*16)/4;figs.forEach((f,i)=>{const x=pad+i*(fw+16),y=head+40;rr(x,y,fw,170,24,"#fff");txt(f[0],x+22,y+46,26,"#5F6B80",600);txt(f[1],x+22,y+112,56,i===3?"#D7263D":"#0F1B33",800);txt(f[2],x+22,y+150,22,"#5F6B80",400)});
+  let y=head+290;const cols=[["Pts",620],["Err",700],["Aces",790],["Ataque",900],["Bloq",1000]];
+  txt("Jugador",pad,y,24,"#5F6B80",700);cols.forEach(([l,x])=>txt(l,x,y,24,"#5F6B80",700,"center"));y+=24;
+  rows.forEach((x,i)=>{rr(pad-16,y,W-2*pad+32,rowH-8,16,i%2?"#F2F3F6":"#fff");const cy=y+38;
+    txt("#"+x.p.num,pad+6,cy,28,"#D4521C",800);txt(fit(String(x.p.name),440,30,600),pad+86,cy,30,"#0F1B33",600);
+    txt(String(x.pts),620,cy,30,"#0F1B33",800,"center");txt(String(x.err),700,cy,30,x.err?"#D7263D":"#0F1B33",600,"center");
+    txt(String(x.S["#"]),790,cy,30,"#0F1B33",600,"center");txt(x.A.t?`${x.A["#"]}/${x.A.t}`:"–",900,cy,30,"#0F1B33",600,"center");txt(String(x.B["#"]),1000,cy,30,"#0F1B33",600,"center");y+=rowH});
+  if(!rows.length){txt("Sin jugadas de jugadores en esta selección",pad,y+40,28,"#5F6B80",500);y+=rowH}
+  txt("Ataque: puntos / ataques. Hecho con emPat Data.",pad,H-56,24,"#5F6B80",400);
+  return cv}
+function showImage(){let cv;try{cv=statsImage()}catch(e){toast("No se pudo hacer la imagen");return}
+  const url=cv.toDataURL("image/png");const{season,scope}=statsScope();const name="empat-"+(season?"temporada":scope[0].date+"-"+slug(scope[0].rival))+".png";
+  let el=document.getElementById("imgbox");if(el)el.remove();el=document.createElement("div");el.id="imgbox";el.dataset.act="imgclose";
+  el.innerHTML=`<div class="card" role="dialog" aria-modal="true" aria-label="Imagen para el equipo"><div class="row spread"><b style="font-size:18px">Imagen para el equipo</b><button class="btn sm" data-act="imgclose">Cerrar</button></div>
+    <img src="${url}" alt="Resumen del partido por jugador">
+    <p class="muted small" style="margin:0">Mantén pulsada la imagen para guardarla o compartirla. Lleva los nombres tal y como los tienes en la plantilla; si hay menores, piensa dónde la compartes.</p>
+    <div class="row"><button class="btn sm primary" data-act="imgsave" data-name="${esc(name)}">Descargar PNG</button>${navigator.canShare?`<button class="btn sm" data-act="imgshare" data-name="${esc(name)}">Compartir</button>`:""}</div></div>`;
+  el._cv=cv;document.body.appendChild(el);setInert();el.querySelector("button[data-act=imgclose]").focus()}
+const cvBlob=cv=>new Promise(res=>cv.toBlob(b=>res(b),"image/png"));
+
+/* ---------- Hoja para imprimir ----------
+   Un documento HTML autocontenido, en blanco y negro y tamaño A4, de la selección de Estadísticas. Se ve aquí, se imprime si el navegador deja y siempre se puede descargar. */
+function printHTML(perPlayer){const{season,scope}=statsScope();const sf=season?"all":ui.statsSet;const st=computeStats(gather(scope,sf)),t=st.team;
+  const m=season?null:scope[0],r=m?replay(m):null;
+  const title=season?`${S.team.name} · Temporada${compLabel()?" · "+compLabel():""}`:`${S.team.name} ${r.wonUs}-${r.wonThem} ${m.rival}`;
+  const sub=season?nn(scope.length,"partido","partidos"):`${fdate(m.date)}${m.comp?" · "+m.comp:""} · ${r.sets.filter(x=>x.us+x.them).map(x=>x.us+"-"+x.them).join(", ")}${r.finished?"":" · en juego"}${sf!=="all"?" · solo el set "+(+sf+1):""}`;
+  const fig=(k,v,s)=>`<div class="f"><div class="k">${esc(k)}</div><div class="v">${v}</div><div class="s">${esc(s)}</div></div>`;
+  const figs=fig("Side-out",pct(t.soW,t.soT),`${t.soW} de ${t.soT}`)+fig("Break",pct(t.brW,t.brT),`${t.brW} de ${t.brT}`)+fig("Side-out recibiendo",pct(t.rcW,t.rcT),`${t.rcW} de ${t.rcT}`)+fig("Al primer ataque",pct(t.fbW,t.rcT),`${t.fbW} de ${t.rcT}`)+fig("Puntos ganados",String(t.ours+t.rivalErr),`${t.ours} nuestros · ${t.rivalErr} error rival`)+fig("Puntos regalados",String(t.ourErr),"errores nuestros");
+  const head=`<tr><th class="l">Jugador</th>${st.hasCourt?"<th>+/−</th>":""}<th>Pts</th><th>Err</th><th class="g">Saq</th><th>Ace</th><th>Err</th><th>Efic.</th><th class="g">Rec</th><th>Pos.</th><th>Perf.</th><th>Err</th><th class="g">Ata</th><th>Pto</th><th>Err</th><th>Blq</th><th>%Pto</th><th>Efic.</th><th class="g">Bloq</th><th>Def</th><th>Faltas</th></tr>`;
+  const line=(s,l,cls)=>{const S_=s.S,R=s.R,A=s.A;return`<tr class="${cls||""}"><td class="l">${l}</td>${st.hasCourt?`<td>${s.on?(s.pm>0?"+":"")+s.pm:"–"}</td>`:""}<td>${s.pts}</td><td>${s.err}</td><td class="g">${S_.t}</td><td>${S_["#"]}</td><td>${S_["="]}</td><td>${eff(S_["#"]+S_["+"]+S_["/"]-S_["="]-S_["-"],S_.t)}</td><td class="g">${R.t}</td><td>${pctN(R["#"]+R["+"],R.t)}</td><td>${pctN(R["#"],R.t)}</td><td>${R["="]}</td><td class="g">${A.t}</td><td>${A["#"]}</td><td>${A["="]}</td><td>${A["/"]}</td><td>${pctN(A["#"],A.t)}</td><td>${eff(A["#"]-A["="]-A["/"],A.t)}</td><td class="g">${s.B["#"]}</td><td>${s.D.t}</td><td>${s.X.t}</td></tr>`};
+  const rk=[1,2,3,4,5,6].filter(n=>st.rot[n]);
+  const rot=rk.length?`<h3>Por rotación</h3><table><tr><th class="l">Rotación</th><th>Side-out</th><th>1.er ataque</th><th>Break</th><th>G-P</th></tr>${rk.map(n=>{const o=st.rot[n];return`<tr><td class="l">R${n}</td><td>${pctN(o.soW,o.soT)}</td><td>${pctN(o.fbW,o.rcT)}</td><td>${pctN(o.brW,o.brT)}</td><td>${o.w}-${o.l}</td></tr>`}).join("")}</table>`:"";
+  const KL=[["K1+","K1 · recepción buena"],["K1-","K1 · recepción mala"],["K1?","K1 · sin recepción"],["K2","K2 · contraataque"]].filter(([k])=>st.K[k]);
+  const kt=KL.length?`<h3>Ataque por fase</h3><table><tr><th class="l">Fase</th><th>Tot</th><th>Pto</th><th>Err</th><th>Blq</th><th>%Pto</th><th>Efic.</th></tr>${KL.map(([k,l])=>{const o=st.K[k];return`<tr><td class="l">${l}</td><td>${o.t}</td><td>${o["#"]}</td><td>${o["="]}</td><td>${o["/"]}</td><td>${pctN(o["#"],o.t)}</td><td>${eff(o["#"]-o["="]-o["/"],o.t)}</td></tr>`}).join("")}</table>`:"";
+  const eb=Object.entries(st.errBy).sort((a,b)=>b[1]-a[1]);
+  const errs=eb.length?`<h3>Dónde fallamos</h3><p>${eb.map(([k,v])=>`${esc(k)} <b>${v}</b>`).join(" · ")}</p>`:"";
+  let pages="";
+  if(perPlayer){const parts=season?scope.slice().reverse().map(x=>({l:fdate(x.date)+" · "+x.rival,g:gather([x],"all")})):r.sets.map((x,i)=>({l:"Set "+(i+1)+" ("+x.us+"-"+x.them+")",g:gather([m],String(i))})).filter((_,i)=>sf==="all"||i===+sf);
+    const pst=parts.map(p=>({l:p.l,rows:computeStats(p.g).rows}));
+    pages=st.rows.filter(x=>x.pid&&(x.pts||x.err||x.S.t||x.R.t||x.A.t||x.B.t||x.D.t||x.E.t||x.on)).map(s=>{
+      const dist=["S","R","A","B","D","E"].filter(f=>s[f].t).map(f=>`<tr><td class="l">${FUND[f].n}</td><td>${s[f].t}</td>${FUND[f].o.map(o=>`<td>${o[1]}: <b>${s[f][o[0]]||0}</b></td>`).join("")}</tr>`).join("")+(s.X.t?`<tr><td class="l">Faltas</td><td>${s.X.t}</td><td colspan="4">red, dobles, pisada u otras</td></tr>`:"");
+      const byPart=pst.map(p=>{const q=p.rows.find(x=>x.pid===s.pid);return q?`<tr><td class="l">${esc(p.l)}</td><td>${q.pts}</td><td>${q.err}</td><td>${q.A.t?q.A["#"]+"/"+q.A.t:"–"}</td><td>${eff(q.A["#"]-q.A["="]-q.A["/"],q.A.t)}</td><td>${pctN(q.R["#"]+q.R["+"],q.R.t)}</td><td>${q.S["#"]}/${q.S["="]}</td></tr>`:""}).join("");
+      return`<section class="pb"><h1>#${esc(s.p.num)} ${esc(s.p.name)}</h1><p class="sub">${esc(title)} · ${esc(sub)}</p>
+        <div class="figs">${fig("Puntos",String(s.pts),"rallies que ganó")+fig("Errores",String(s.err),"rallies que perdió")+fig("Ataque",s.A.t?pct(s.A["#"],s.A.t):"–",`${nn(s.A["#"],"punto","puntos")} de ${s.A.t}`)+fig("Recepción positiva",s.R.t?pct(s.R["#"]+s.R["+"],s.R.t):"–",`${s.R.t} recepciones`)}</div>
+        ${dist?`<h3>Cada toque</h3><table class="d">${dist}</table>`:""}
+        ${byPart?`<h3>${season?"Partido a partido":"Set a set"}</h3><table><tr><th class="l">${season?"Partido":"Set"}</th><th>Pts</th><th>Err</th><th>Ataque</th><th>Efic.</th><th>Rec. pos.</th><th>Aces/err. saque</th></tr>${byPart}</table>`:""}</section>`}).join("")}
+  const css=`@page{size:A4;margin:12mm}*{box-sizing:border-box}body{font:11px/1.35 -apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:#000;background:#fff;margin:0;padding:12px}
+    h1{font-size:20px;margin:0}h3{font-size:12px;text-transform:uppercase;letter-spacing:.04em;margin:14px 0 4px}.sub{color:#444;margin:2px 0 10px}
+    .figs{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}.f{border:1px solid #999;border-radius:6px;padding:5px 7px}.f .k{font-size:9px;color:#444;text-transform:uppercase}.f .v{font-size:18px;font-weight:700}.f .s{font-size:9px;color:#444}
+    section.pb .figs{grid-template-columns:repeat(4,1fr)}
+    table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}th,td{border-bottom:1px solid #bbb;padding:3px 4px;text-align:right;white-space:nowrap}th{font-size:9px;text-transform:uppercase;color:#333}
+    .l{text-align:left}.g{border-left:1px solid #888}tr.tot td{font-weight:700;border-top:2px solid #000}.nn{font-size:8px;color:#555;margin-left:2px}.low{color:#666}.pos,.neg{font-weight:600}
+    table.d td{text-align:left}.pb{break-before:page;page-break-before:always}.foot{margin-top:14px;color:#555;font-size:9px}
+    @media screen{body{max-width:1000px;margin:0 auto}}`;
+  return`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title><style>${css}</style></head><body>
+    <h1>${esc(title)}</h1><p class="sub">${esc(sub)}</p><div class="figs">${figs}</div>
+    <h3>Por jugador</h3><table>${head}${st.rows.map(s=>line(s,`#${esc(s.p.num)} ${esc(s.p.name)}`)).join("")}${line(st.T,"Equipo","tot")}</table>
+    ${rot}${kt}${errs}
+    <p class="foot">Eficacia de saque = (aces + positivos − errores) / saques. Eficacia de ataque = (puntos − errores − bloqueados) / ataques. Recepción positiva = perfectas + positivas. El número pequeño es el total de acciones. Hecho con emPat Data el ${new Date().toLocaleDateString("es-ES")}.</p>
+    ${pages}</body></html>`}
+function showPrint(){let html;try{html=printHTML(false)}catch(e){toast("No se pudo hacer la hoja");return}
+  const{season,scope}=statsScope();const name="empat-hoja-"+(season?"temporada":(scope[0].date||"")+"-"+slug(scope[0].rival))+".html";
+  let el=document.getElementById("printbox");if(el)el.remove();el=document.createElement("div");el.id="printbox";el.dataset.act="printclose";
+  el.innerHTML=`<div class="card" role="dialog" aria-modal="true" aria-label="Hoja para imprimir"><div class="row spread"><b style="font-size:18px">Hoja para imprimir</b><button class="btn sm" data-act="printclose">Cerrar</button></div>
+    <div class="row"><label class="row small" style="gap:6px"><input type="checkbox" id="print-pl"> Añadir una hoja por jugador</label></div>
+    <iframe title="Vista previa de la hoja"></iframe>
+    <p class="muted small" style="margin:0">Si al pulsar «Imprimir» no pasa nada, descarga la hoja, ábrela en el navegador e imprímela o guárdala como PDF. Lleva los nombres de la plantilla: si hay menores, piensa a quién se la das.</p>
+    <div class="row"><button class="btn sm primary" data-act="printgo">Imprimir</button><button class="btn sm" data-act="printdl" data-name="${esc(name)}">Descargar la hoja (.html)</button></div></div>`;
+  document.body.appendChild(el);const fr=el.querySelector("iframe");fr.onload=()=>{try{fr.contentWindow.addEventListener("keydown",e=>{if(e.key==="Escape")closeBox("printbox")})}catch(e){}};fr.srcdoc=html;setInert();el.querySelector("button[data-act=printclose]").focus()}
+/* Mientras hay un panel o un diálogo, lo de detrás no recibe foco ni toques */
+function setInert(){const on=!!(ui.sheet||document.getElementById("imgbox")||document.getElementById("printbox"));["app","tabs","vidbox"].forEach(id=>{const x=document.getElementById(id);if(x)x.inert=on&&!(id==="vidbox"&&ui.sheet)})}
+function closeBox(id){const el=document.getElementById(id);if(el)el.remove();setInert();const b=document.querySelector(id==="imgbox"?"[data-act=img]":"[data-act=print]");if(b)b.focus({preventScroll:true})}
+function backFocus(){if(ui.ret==null)return;const id=ui.ret;ui.ret=null;const b=document.querySelector(`#app [data-act=player][data-id="${id}"]`);if(b&&!b.disabled)b.focus({preventScroll:true})}
+
+/* ---------- Copia de seguridad ---------- */
+const BK_KEY=LS_KEY+"-ultima-copia";
+function lastBackup(){try{return+localStorage.getItem(BK_KEY)||0}catch(e){return 0}}
+function backupText(){return JSON.stringify({app:"empat-data",v:2,savedAt:Date.now(),team:S.team,matches:Object.fromEntries(Object.entries(S.matches).filter(([k,m])=>!m.example))},null,1)}
+/* Lee una copia y cuenta qué haría, sin tocar nada */
+function parseBackup(txt){let d;try{d=JSON.parse(txt)}catch(e){return{err:"El texto no es una copia de emPat Data"}}
+  if(!d||typeof d!=="object"||!d.team||!d.matches||typeof d.matches!=="object")return{err:"El fichero no es una copia de emPat Data"};
+  d.team.players=cleanPlayers(d.team.players);
+  const mk={},clash={},local=pmap({players:S.team.players});let add=0,upd=0,same=0,back=0,byNum=0;
+  for(const k in d.matches){const rm=normalizeMatch(clone(d.matches[k]));if(!rm||!Array.isArray(rm.sets))continue;const key=sid(rm.id||k)||newId();rm.id=key;
+    const mp=numMap(rm.players);byNum=Math.max(byNum,Object.keys(mp).length);
+    /* mismo dorsal y otro nombre: se une igualmente, pero se avisa */
+    (rm.players||[]).forEach(p=>{const to=mp[p.id];if(to&&local[to]&&compKey(local[to].name)!==compKey(p.name))clash[p.num]=`#${p.num} ${p.name} del fichero se une a tu #${local[to].num} ${local[to].name}`});
+    remapIds(rm,mp);mk[key]=rm;const loc=S.matches[key];
+    if(!loc){add++;if(S.deleted[key])back++}else if(sameMatch(mergeMatch(loc,rm),loc))same++;else upd++}
+  d.matches=mk;
+  const known=new Set(S.team.players.map(p=>p.id)),nums=new Set(S.team.players.map(p=>+p.num));
+  const newPl=(d.team.players||[]).filter(p=>!known.has(p.id)&&!nums.has(+p.num));
+  /* La tabla «Qué cierra cada jugada» viene con una copia completa; solo se trae si aquí sigue la de por defecto */
+  const tbl=d.kind!=="partido"&&d.team.table&&typeof d.team.table==="object"&&JSON.stringify(S.team.table||DEFAULT_TABLE)===JSON.stringify(DEFAULT_TABLE)&&JSON.stringify(d.team.table)!==JSON.stringify(DEFAULT_TABLE);
+  return{d,add,upd,same,back,byNum,newPl:newPl.length,kind:d.kind,clash:Object.values(clash),tbl}}
+function applyBackup(rs){const d=rs.d;
+  for(const k in d.matches){const loc=S.matches[k];const mg=mergeMatch(loc,d.matches[k]);mg.example=false;
+    if(loc&&sameMatch(mg,loc))continue;
+    /* sin tocar la fecha de modificación: la fusión ya se queda con la más reciente de las dos copias */
+    delete S.deleted[k];mg.status=replay(mg).finished?"done":"live";S.matches[k]=mg;markDirty("m_"+k)}
+  const known=new Set(S.team.players.map(p=>p.id)),nums=new Set(S.team.players.map(p=>+p.num));
+  (d.team.players||[]).forEach(p=>{if(!known.has(p.id)&&!nums.has(+p.num)){S.team.players.push(clone(p));nums.add(+p.num)}});
+  if(rs.tbl)S.team.table=clone(d.team.table);
+  if(S.team.name==="Mi equipo"&&d.team.name)S.team.name=String(d.team.name);teamChanged();
+  const cur=S.matches[ui.liveId];if(!cur||cur.status!=="live")pickLive()}
+function browserSave(name,blob){try{const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;a.rel="noopener";document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},4000);return true}catch(e){return false}}
+async function saveFile(name,txt,okMsg){let dl=null;try{dl=window.claude&&window.claude.use?await window.claude.use("downloads"):null}catch(e){}
+  /* Fuera de claude.ai (la demo en la web): descarga normal del navegador y, por si el navegador no deja (apps con navegador integrado), el texto para copiar */
+  if(!dl){const ok=browserSave(name,new Blob([txt],{type:/\.csv$/.test(name)?"text/csv":/\.html$/.test(name)?"text/html":"application/json"}));showCopyBox(txt);toast(ok?okMsg+". Si no ves el fichero, copia el texto":"No se puede descargar aquí: copia el texto");return ok}
+  try{await dl.save({filename:name,data:txt});toast(okMsg);return true}catch(e){if(e&&e.code!=="declined")toast("No se pudo guardar el fichero");return false}}
+
+/* ---------- Utilidades de vista ---------- */
+function sortedMatches(){return Object.values(S.matches).sort((a,b)=>(b.date||"").localeCompare(a.date||"")||(b.updatedAt-a.updatedAt))}
+function pickLive(){const l=sortedMatches().find(m=>m.status==="live");ui.liveId=l?l.id:null}
+function toast(msg,action,ms){ui.toast=msg;ui.toastAct=action||null;renderToast();clearTimeout(toast.t);toast.t=setTimeout(()=>{ui.toast=null;ui.toastAct=null;renderToast()},ms||(action?6000:2600))}
+function renderToast(){let el=$("#toast");if(!ui.toast){if(el)el.remove();return}if(!el){el=document.createElement("div");el.id="toast";el.className="toast";el.setAttribute("role","status");document.body.appendChild(el)}el.textContent=ui.toast;
+  if(ui.toastAct){const b=document.createElement("button");b.className="tact";b.dataset.act=ui.toastAct.act;b.textContent=ui.toastAct.label;el.appendChild(b)}}
+function evLabel(e,P){
+  if(e.f==="T")return"Tiempo muerto "+(e.side==="us"?"nuestro":"del rival");
+  if(e.f==="RE"||e.f==="RP")return TEAMF[e.f];
+  if(e.f==="SUB")return"Cambio: entra "+pname(P,e.pin)+" por "+pname(P,e.pout);
+  if(e.f==="LIB")return"Cambio de líbero: entra "+pname(P,e.p);
+  if(e.f==="GAP")return`Puntos sin apuntar: el marcador pasa a ${e.us}-${e.them}`;
+  const p=P[e.p];const who=p?"#"+p.num+" "+p.name:(e.f==="X"?"Equipo":"Sin jugador");
+  return who+" · "+FUND[e.f].n+" "+optLabel(e.f,e.r).toLowerCase()+zoneTxt(e);
+}
+function evSym(e,T){if(e.f==="RE")return["+1","r-good"];if(e.f==="RP")return["−1","r-bad"];if(e.f==="T")return["T","r-neu"];if(e.f==="SUB")return["⇄","r-neu"];if(e.f==="LIB")return["L","r-neu"];if(e.f==="GAP")return["…","r-neu"];if(e.f==="X")return["=","r-bad"];return[e.r,rclass(e.f,e.r,T)]}
+/* Zonas (modo zonas del partido, m.zones). Campo rival visto desde el nuestro, red abajo: 1-6-5 fondo, 9-8-7 medio, 2-3-4 red.
+   Origen del ataque en nuestro campo, red arriba: 4-3-2 delante, 5-6-1 detrás. e.z = zona de destino, e.zo = zona de origen (solo ataque). */
+const ZR=[[1,6,5],[9,8,7],[2,3,4]],ZO=[[4,3,2],[5,6,1]];
+function zgrid(key,sel,org){return`<div class="zgrid${org?" org":""}">${org?`<span class="znet"></span>`:""}${(org?ZO:ZR).flat().map(z=>`<button type="button" class="zb" data-act="zp" data-k="${key}" data-v="${z}" aria-pressed="${sel===z}" aria-label="${org?"Desde la zona ":"Hacia la zona "}${z}">${z}</button>`).join("")}${org?"":`<span class="znet"></span>`}</div>`}
+function zpick(f,sh){return f==="S"?`<div class="zpick"><div><span class="zl">Hacia (opcional)</span>${zgrid("zS",sh.zS)}</div></div>`
+  :`<div class="zpick"><div><span class="zl">Desde (opcional)</span>${zgrid("zo",sh.zo,true)}</div><div><span class="zl">Hacia (opcional)</span>${zgrid("zA",sh.zA)}</div></div>`}
+const zoneTxt=e=>(e.f==="S"||e.f==="A")&&(e.z||e.zo)?` · zona ${e.zo?e.zo+"→":""}${e.z||"?"}`:"";
+const PENCIL=`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4"/></svg>`;
+function pending(m){const out=[];m.sets.forEach((s,si)=>effective(s).forEach(e=>{if(ACT.includes(e.f)&&e.f!=="X"&&!e.p)out.push({e,si})}));return out}
+
+/* ---------- Piezas gráficas ---------- */
+function jersey(p,lg,lib){if(!p)return`<span class="badge none${lg?" lg":""}" aria-hidden="true">?</span>`;return`<span class="badge${lib||p.pos==="LIB"?" lib":""}${lg?" lg":""}" aria-hidden="true">${esc(p.num)}</span>`}
+function setChips(r,showLive){return r.sets.filter(s=>s.us+s.them>0||showLive).map((s,i)=>`<span class="${s.done?(s.winner==="us"?"w":"l"):""}">S${i+1} ${s.us}-${s.them}</span>`).join("")}
+function feedItem(m,e,r,P){const c=r.ctx[e.id]||{};const[sym,cls]=evSym(e,m.table||DEFAULT_TABLE);
+  const a=e.f==="GAP"?e.us:c.us+(c.win==="us"?1:0),b=e.f==="GAP"?e.them:c.them+(c.win==="them"?1:0);const iss=r.issues.filter(x=>x.evId===e.id);
+  const sk=e.vt!=null&&vid.url&&vid.mid===m.id?`<button class="seek" data-act="seek" data-t="${e.vt}" aria-label="Ver en el vídeo">▶ ${fsec(e.vt)}</button>`:"";
+  return`<li class="${iss.length||c.extra?"bad":""}"><span class="sc">${a}-${b}</span><span class="code ${cls}">${esc(sym)}</span><span class="lbl">${esc(evLabel(e,P))}${iss.map(x=>`<span class="imsg">${esc(x.msg)}</span>`).join("")}</span>${sk}<button class="icon" data-act="edit" data-ref="${e.id}" data-si="${c.set}" aria-label="Corregir: ${esc(evLabel(e,P))}">${PENCIL}</button></li>`}
+
+/* ---------- Render ---------- */
+function render(){
+  document.querySelectorAll("#tabs button").forEach(b=>b.setAttribute("aria-current",b.dataset.go===ui.view||((ui.view==="new"||ui.view==="lineup"||ui.view==="follow")&&b.dataset.go==="live")?"page":"false"));
+  const head=`<div class="top"><div class="brand"><svg class="logo" viewBox="0 0 200 200" aria-hidden="true"><rect width="200" height="200" rx="46" fill="#0F1B33"/><path d="M54 30 H106 A48 48 0 0 1 106 126 H76 V162 A8 8 0 0 1 68 170 H54 A8 8 0 0 1 46 162 V38 A8 8 0 0 1 54 30 Z" fill="#FFFFFF"/><circle cx="106" cy="78" r="24" fill="#0F1B33"/><circle cx="106" cy="78" r="20" fill="#FF7A45"/><g transform="translate(106 78) scale(0.4545)" fill="none" stroke="#0F1B33" stroke-width="8" stroke-linecap="round"><path d="M0 0 Q20.5 -16.4 9.2 -40"/><path transform="rotate(120)" d="M0 0 Q20.5 -16.4 9.2 -40"/><path transform="rotate(240)" d="M0 0 Q20.5 -16.4 9.2 -40"/></g></svg><div><h1>em<span class="bp">P</span>at <span class="data">Data</span></h1><p class="hand">${esc(S.team.name)}</p></div></div>
+    <div class="sync" id="sync" data-s="${syncState}"><i></i>${syncLabel()}</div></div>`;
+  let body="";
+  if(ui.view==="live")body=viewLive();else if(ui.view==="lineup")body=viewLineup();else if(ui.view==="new")body=viewNew();else if(ui.view==="stats")body=viewStats();else if(ui.view==="history")body=viewHistory();else if(ui.view==="follow")body=viewFollow();else body=viewTeam();
+  const sf=ui.saveFail?`<div class="note warn" id="savefail"><div><p class="hand">No se ha podido guardar en este dispositivo</p><div class="small">El almacenamiento del navegador está lleno o bloqueado. Lo último apuntado podría perderse al cerrar. Descarga una copia ahora.</div></div><button class="btn sm primary" data-act="backup">Descargar copia</button></div>`:"";
+  $("#app").innerHTML=head+sf+body;
+  renderVid(false);
+  renderSheet();
+}
+
+function viewLive(){
+  const m=S.matches[ui.liveId];
+  if(!m){
+    const hasPl=S.team.players.length>0;
+    return`<div class="sheetcard empty"><h2>No hay partido en juego</h2>
+      <p class="hand">Así se usa a pie de pista:</p>
+      <ol><li>En <b>Equipo</b>, apunta a tus jugadores con su dorsal.</li><li>Pulsa <b>Nuevo partido</b> y marca los convocados.</li><li>En cada jugada, toca la camiseta y luego lo que ha hecho. El marcador suma solo.</li></ol>
+      <div class="row"><button class="btn primary" data-act="new" ${hasPl?"":"disabled"}>Nuevo partido</button>
+      ${hasPl?"":`<button class="btn" data-go="team">Añadir jugadores</button>`}
+      ${S.matches.ejemplo?`<button class="btn" data-act="open" data-id="ejemplo">Abrir el partido de ejemplo</button>`:`<button class="btn" data-act="example">Ver un partido de ejemplo</button>`}<button class="btn" data-go="follow">Seguir un directo</button></div></div>`;
+  }
+  const r=replay(m),P=pmap(m),ci=r.ci,cur=r.cur;
+  const ourName=S.team.name||"Nosotros";
+  const lock=locked(r);
+  let note="";
+  if(r.finished)note=`<div class="note"><p class="hand">${r.wonUs>r.wonThem?"¡Partido ganado!":"Partido perdido"} ${r.wonUs}-${r.wonThem}</p><div class="row"><button class="btn sm" data-act="undo">Deshacer el último punto</button><button class="btn sm primary" data-act="tostats" data-id="${m.id}">Ver estadísticas</button></div></div>`;
+  else if(cur.done)note=`<div class="note"><div><p class="hand">Set ${ci+1} para ${cur.winner==="us"?esc(ourName):esc(m.rival)}, ${cur.us}-${cur.them}</p><div class="small">Antes del set ${ci+2}: alineación y quién saca</div></div><div class="row"><button class="btn sm" data-act="undo">Deshacer</button><button class="btn sm primary" data-act="lineup" data-si="new">Preparar el set ${ci+2}</button></div></div>`;
+  const firstIss=r.issues[0];
+  const warn=firstIss?`<div class="note warn"><div><p class="hand">${firstIss.evId?`El set ${firstIss.set+1} deja de cuadrar en el rally ${firstIss.rally}`:`El set ${firstIss.set+1} no cuadra`}</p><div class="small">${esc(firstIss.msg)}${r.issues.length>1?` · ${r.issues.length} avisos en total`:""}</div></div><button class="btn sm" data-act="showlog" data-si="${firstIss.set}">Revisar jugadas</button></div>`:"";
+  const pts={},errs={};
+  r.sets.forEach(st=>st.evs.forEach(e=>{const c=r.ctx[e.id];if(!e.p||!c.win||c.extra)return;if(c.win==="us")pts[e.p]=(pts[e.p]||0)+1;else errs[e.p]=(errs[e.p]||0)+1}));
+  const roster=m.roster||(m.players||[]).map(x=>x.id);
+  const players=(m.players||[]).filter(p=>roster.includes(p.id)).sort((a,b)=>a.num-b.num);
+  const all=[];r.sets.forEach(st=>st.evs.forEach(e=>all.push(e)));
+  const feed=all.slice(-7).reverse().map(e=>feedItem(m,e,r,P)).join("");
+  const pend=pending(m);
+  const canUndo=all.length||m.sets.length>1;
+  return`<div class="row spread"><div><h2>vs ${esc(m.rival)}</h2><div class="muted small">${fdate(m.date)}${m.comp?" · "+esc(m.comp):""}</div></div>
+    <div class="row">${m.example?`<span class="tag ex">ejemplo</span>`:""}<button class="btn sm" data-act="detail" title="Cambiar el nivel de detalle" aria-label="Modo ${isQuick(m)?"rápido":"completo"}: cambiar">${isQuick(m)?"⚡ Rápido":"Completo"}</button>${m.example?"":`<button class="btn sm" data-act="zones" aria-pressed="${!!m.zones}" title="Apuntar hacia dónde van saques y ataques">${m.zones?"Zonas ✓":"Zonas"}</button>`}<button class="btn sm" data-act="new">Nuevo partido</button></div></div>
+  <div class="score" role="group" aria-label="Marcador, set ${ci+1}">
+    <div class="t us"><span class="tn">${esc(ourName)}</span><span class="n">${cur.us}</span><span class="srv ${r.serving==="us"&&!lock?"on":""}">Saque</span><span class="ts">Sets ${r.wonUs} · Tiempos ${cur.to.us}/2</span></div>
+    <div class="mid"><span class="colon">:</span><span class="setn">Set ${ci+1}</span>${cur.rotN?`<span class="rotn" title="Rotación: el colocador está en P${cur.rotN}">Rot. ${cur.rotN}</span>`:""}</div>
+    <div class="t them"><span class="tn">${esc(m.rival)}</span><span class="n">${cur.them}</span><span class="srv ${r.serving==="them"&&!lock?"on":""}">Saque</span><span class="ts">Sets ${r.wonThem} · Tiempos ${cur.to.them}/2</span></div>
+  </div>
+  <div class="setline">${setChips(r,true)}</div>
+  ${note}${warn}
+  ${cur.court?serveRow(m,r,P,lock)+courtZone(m,r,P,pts,errs,lock,players):`<div class="zone"><div class="row spread"><p class="hand">Toca un jugador</p><span class="muted small">${lock?"":r.serving==="us"?"Sacamos nosotros: empieza por el saque":"Saca el rival: empieza por la recepción"}</span></div>
+    ${lock?"":`<div class="row spread" style="background:var(--fill);border-radius:var(--r-sm);padding:10px 12px"><span class="small">Sin alineación en este set: no se cuentan rotaciones.</span><button class="btn sm" data-act="lineup" data-si="${ci}">Poner alineación</button></div>`}
+    ${isQuick(m)?teamBar(m,r,lock):""}
+    <div class="bench">${players.map(p=>`<button class="jsy" data-act="player" data-id="${p.id}" ${lock?"disabled":""} aria-label="Dorsal ${p.num}, ${esc(p.name)}">${jersey(p)}<span class="nm">${esc(p.name)}</span><span class="tally"><b>${pts[p.id]||0} pts</b> · <em>${errs[p.id]||0} err</em></span></button>`).join("")}
+      <button class="jsy later" data-act="player" data-id="" ${lock?"disabled":""}>${jersey(null)}<span class="nm">Sin jugador</span><span class="tally">Asignar después</span></button></div>
+    ${isQuick(m)?"":teamBar(m,r,lock)}</div>`}
+  ${pend.length?`<div class="zone"><div class="row spread"><p class="hand">Pendientes de asignar · ${pend.length}</p><span class="muted small">Para el tiempo muerto</span></div><ul class="pend">${pend.map(({e,si})=>{const c=r.ctx[e.id];return`<li><span class="code ${rclass(e.f,e.r,m.table)}">${esc(e.r)}</span><span style="flex:1">${esc(FUND[e.f].n+" "+optLabel(e.f,e.r).toLowerCase())} <span class="muted small">· set ${si+1}, ${c.us}-${c.them}</span></span><button class="btn sm" data-act="edit" data-ref="${e.id}" data-si="${si}">Asignar</button></li>`}).join("")}</ul></div>`:""}
+  <div class="zone"><div class="row spread"><p class="hand">Últimas jugadas <span class="small" style="text-transform:none;letter-spacing:0">· ${nn(cur.us+cur.them,"punto","puntos")} en este set${cur.gap?`, ${cur.gap} sin apuntar`:""}</span></p><div class="row"><button class="btn sm" data-act="showlog" data-si="${ci}">${ui.logOpen?"Ocultar el set":"Todo el set"}</button><button class="btn sm" data-act="undo" ${canUndo?"":"disabled"}>↶ Deshacer</button></div></div>
+    ${ui.logOpen?viewLog(m,r):feed?`<ul class="feed">${feed}</ul>`:`<p class="muted">Aún no hay jugadas. Toca un jugador para apuntar la primera.</p>`}
+    <div class="codes"><span><b>#</b> perfecto o punto</span><span><b>+</b> positivo</span><span><b>!</b> en juego</span><span><b>−</b> negativo</span><span><b>/</b> bloqueado</span><span><b>=</b> error</span><span>Toca el lápiz para corregir cualquier jugada</span></div></div>
+  ${m.example?"":videoZone(m)}
+  ${shareZone(m)}`;
+}
+function teamBar(m,r,lock){const cur=r.cur;const d=lock?"disabled":"";
+  return`<div class="quick">
+      <button class="qbtn us" data-act="team" data-f="RE" ${d}>Error del rival<small>+1 para nosotros</small></button>
+      <button class="qbtn them" data-act="team" data-f="RP" ${d}>Punto del rival<small>+1 para ellos, sin fallo nuestro</small></button>
+      <button class="qbtn them" data-act="fault" ${d}>Falta nuestra<small>red, dobles, rotación…</small></button>
+      <button class="qbtn" data-act="gap" ${d}>Me he perdido puntos<small>pon el marcador de ahora</small></button>
+      <button class="qbtn" data-act="to" data-side="us" ${lock||cur.to.us>=2?"disabled":""}>Tiempo nuestro<small>${cur.to.us} de 2</small></button>
+      <button class="qbtn" data-act="to" data-side="them" ${lock||cur.to.them>=2?"disabled":""}>Tiempo rival<small>${cur.to.them} de 2</small></button>
+      ${cur.court?`<button class="qbtn" data-act="sub" ${d}>Cambio<small>${cur.subs} de ${m.maxSubs||6} en este set</small></button>`:""}
+      ${cur.court&&cur.libs.length>1?`<button class="qbtn lib" data-act="libswap" ${d}>Cambiar líbero<small>entra #${esc((pmap(m)[cur.libs.find(x=>x!==cur.lib)]||{}).num)}</small></button>`:""}
+    </div>`}
+/* Fila de saque: el sacador (P1) ya se sabe, así que basta un toque */
+function serveRow(m,r,P,lock){const st=r.cur;if(lock||r.serving!=="us"||!st.rot||(st.curRally&&st.curRally.evs.length))return"";
+  const p=P[st.rot[0]];if(!p)return"";const T=m.table||DEFAULT_TABLE;
+  const q=isQuick(m);
+  return`<div class="zone serve"><div class="row spread"><div class="row" style="gap:10px">${jersey(p)}<div><p class="hand us" style="margin:0">Saca #${esc(p.num)} ${esc(p.name)}</p><span class="muted small">${q?"Solo si el rally acaba en el saque":"Un toque y listo"}</span></div></div></div>
+    ${m.zones?`<div class="zpick"><div><span class="zl">Hacia (opcional, antes de la evaluación)</span>${zgrid("qz",ui.qz)}</div></div>`:""}
+    <div class="opts">${(q?closing(T,"S"):FUND.S.o).map(o=>{const w=T.S&&T.S[o[0]];return`<button class="opt ${rclass("S",o[0],T)}" data-act="qserve" data-r="${esc(o[0])}"><b>${esc(o[0])}</b>${esc(o[1])}${w?`<small>${w==="us"?"+1 nosotros":"+1 rival"}</small>`:""}</button>`}).join("")}</div></div>`}
+/* La pista: delante 4-3-2, detrás 5-6-1, con el líbero ya colocado */
+function courtZone(m,r,P,pts,errs,lock,players){const st=r.cur,ct=st.court,d=lock?"disabled":"";
+  const tile=i=>{const id=ct.c[i],p=P[id],srv=i===0&&r.serving==="us"&&!lock,isL=st.libs.includes(id);
+    return`<button class="cpos${srv?" srvp":""}${isL?" islib":""}" data-act="player" data-id="${id}" ${d} aria-label="Zona ${i+1}: ${p?"dorsal "+p.num+", "+esc(p.name):"vacía"}"><span class="z">${i+1}</span>${srv?`<span class="flag">Saca</span>`:id===st.setter?`<span class="flag set">Col.</span>`:isL?`<span class="flag lib">Líb.</span>`:""}${jersey(p,false,isL)}<span class="nm">${esc(p?p.name:"?")}</span><span class="tally"><b>${pts[id]||0}</b> · <em>${errs[id]||0}</em></span></button>`};
+  const onCourt=new Set(ct.c);const bench=players.filter(p=>!onCourt.has(p.id)&&!st.rot.includes(p.id)&&!st.libs.includes(p.id));
+  const libTxt=st.lib?(ct.libAt>=0?`Líbero #${esc(P[st.lib].num)} por #${esc((P[ct.out]||{}).num)}`:`Líbero #${esc(P[st.lib].num)} fuera: saca el central`):"";
+  return`<div class="zone"><div class="row spread"><p class="hand">${lock?"En pista":r.serving==="us"?"Sacamos nosotros":"Saca el rival: empieza por la recepción"}</p><div class="row" style="gap:8px"><span class="muted small">${st.rotN?"Rotación "+st.rotN:""}${libTxt?" · "+libTxt:""}</span><button class="btn sm" data-act="lineup" data-si="${r.ci}">Alineación</button></div></div>
+    ${isQuick(m)?teamBar(m,r,lock):""}
+    <div class="court"><div class="net" aria-hidden="true"><span>Red</span></div><div class="cgrid">${[3,2,1,4,5,0].map(tile).join("")}</div></div>
+    <div class="row"><button class="btn sm" data-act="player" data-id="" ${d}>? Sin jugador · asignar después</button></div>
+    ${bench.length?`<div class="benchline"><span class="muted small">Banquillo</span>${bench.map(p=>`<button class="pchip" data-act="sub" data-in="${p.id}" ${d} aria-label="Cambio: entra ${esc(p.name)}">#${esc(p.num)} ${esc(p.name)}</button>`).join("")}</div>`:""}
+    ${isQuick(m)?"":teamBar(m,r,lock)}</div>`}
+/* Log completo de un set, agrupado por rally */
+function viewLog(m,r){const P=pmap(m);const si=ui.logSet==null||ui.logSet>=r.sets.length?r.ci:ui.logSet;const st=r.sets[si];
+  const seg=r.sets.length>1?`<div class="seg" role="group" aria-label="Set del log">${r.sets.map((_,i)=>`<button data-act="logset" data-v="${i}" aria-pressed="${i===si}">Set ${i+1}</button>`).join("")}</div>`:"";
+  const groups=[];let g=null;for(const e of st.evs){const c=r.ctx[e.id];const key=c.extra?"x":c.rally;if(!g||g.key!==key){g={key,c,evs:[]};groups.push(g)}g.evs.push(e)}
+  if(!groups.length)return seg+`<p class="muted">Este set aún no tiene jugadas.</p>`;
+  const ourName=S.team.name||"Nosotros";
+  return seg+`<div class="otab">${groups.reverse().map(g=>{const last=g.evs.map(e=>r.ctx[e.id]).find(c=>c.win);
+    return`<div class="rally"><div class="rh"><span>${g.key==="x"?"Después del final del set":`Rally ${g.c.rally} · saca ${g.c.sv==="us"?esc(ourName):esc(m.rival)} · ${g.c.us}-${g.c.them}`}</span>${last?`<span class="${last.win==="us"?"w":"l"}">${last.win==="us"?"Punto nuestro":"Punto rival"}</span>`:""}</div>
+    <ul class="feed">${g.evs.slice().reverse().map(e=>feedItem(m,e,r,P)).join("")}</ul></div>`}).join("")}</div>`}
+
+/* ---------- Hoja de acciones ----------
+   ui.sheet = {mode:"new"|"fault"|"edit"|"teamedit", p, prev:{f,r}, ref, si} */
+function sheetPlayers(m){const roster=m.roster||(m.players||[]).map(x=>x.id);return(m.players||[]).filter(p=>roster.includes(p.id)).sort((a,b)=>a.num-b.num)}
+function renderSheet(){
+  let el=$("#sheet");if(el)el.remove();const sh=ui.sheet;setInert();if(!sh){vidRelease();backFocus();return}vidHold();
+  const m=S.matches[ui.liveId];if(!m){ui.sheet=null;return}
+  const P=pmap(m),r=replay(m),T=m.table||DEFAULT_TABLE;
+  el=document.createElement("div");el.id="sheet";el.className="sheet-bg";el.dataset.act="close";
+  let inner="";
+  if(sh.mode==="gap"){const st=r.cur;const diff=(sh.us-st.us)+(sh.them-st.them);const ourName=S.team.name||"Nosotros";
+    const gtgt=r.ci===m.bestOf-1?m.tie:m.pts;const ends=Math.max(sh.us,sh.them)>=gtgt&&Math.abs(sh.us-sh.them)>=2;
+    const step=(k,lbl)=>`<div class="frow"><span class="fn">${esc(lbl)}</span><div class="stepper"><button class="btn" data-act="gapstep" data-k="${k}" data-d="-1" ${sh[k]<=st[k]?"disabled":""} aria-label="Uno menos">−</button><span class="n" id="gap-${k}">${sh[k]}</span><button class="btn" data-act="gapstep" data-k="${k}" data-d="1" ${sh[k]+1>Math.max(gtgt,sh[k==="us"?"them":"us"]+2)?"disabled":""} aria-label="Uno más">+</button></div></div>`;
+    inner=`<header><div><div style="font-weight:700;font-size:20px">Me he perdido puntos</div><div class="muted small">Set ${r.ci+1} · iba ${st.us}-${st.them}. Pon el marcador de ahora.</div></div><button class="btn sm" data-act="close">Cerrar</button></header>
+      <div class="gapgrid">${step("us",ourName)}${step("them",m.rival)}</div>
+      <div class="frow"><span class="fn">¿Quién saca ahora?</span><div class="seg" role="group"><button data-act="gapsv" data-v="us" aria-pressed="${sh.sv==="us"}">${esc(ourName)}</button><button data-act="gapsv" data-v="them" aria-pressed="${sh.sv==="them"}">${esc(m.rival)}</button></div></div>
+      ${st.rot?`<div class="frow"><span class="fn">¿Quién está en P1 (zona de saque)?</span><div class="pchips">${st.rot.map(id=>P[id]).filter(Boolean).map(q=>`<button class="pchip" data-act="gapp1" data-id="${q.id}" aria-pressed="${sh.p1===q.id}">#${esc(q.num)} ${esc(q.name)}</button>`).join("")}<button class="pchip" data-act="gapp1" data-id="" aria-pressed="${!sh.p1}">No lo sé</button></div><span class="muted small">Para que la rotación siga cuadrando. Si no lo sabes, se queda como estaba.</span></div>`:""}
+      <p class="muted small" style="margin:0">Esos ${diff>0?diff+" ":""}puntos cuentan en el marcador, pero no en side-out, break, rotaciones ni +/−, porque no se sabe cómo fueron.</p>
+      ${ends&&diff>0?`<p class="small" style="margin:0;color:var(--mid);font-weight:600">Con ${sh.us}-${sh.them} el set se acaba.</p>`:""}
+      <div class="row"><button class="btn primary" data-act="gapdo" ${diff>0?"":"disabled"}>Poner ${sh.us}-${sh.them}</button></div>`;
+  }else if(sh.mode==="sub"){const st=r.cur;if(!st.rot){ui.sheet=null;return}
+    const pl=sheetPlayers(m);const benchP=pl.filter(p=>!st.rot.includes(p.id)&&!st.libs.includes(p.id));
+    const warns=sh.out&&sh.in?trySub(m,{f:"SUB",pout:sh.out,pin:sh.in}):[];
+    const chip=(p,k,sel,extra)=>`<button class="pchip" data-act="subpick" data-k="${k}" data-id="${p.id}" aria-pressed="${sel===p.id}">${extra||""}#${esc(p.num)} ${esc(p.name)}</button>`;
+    inner=`<header><div><div style="font-weight:700;font-size:20px">Cambio</div><div class="muted small">Set ${r.ci+1} · ${st.us}-${st.them} · cambios ${st.subs} de ${m.maxSubs||6}</div></div><button class="btn sm" data-act="close">Cerrar</button></header>
+      <div class="frow"><span class="fn">Sale</span><div class="pchips">${[0,1,2,3,4,5].map(i=>{const p=P[st.rot[i]];return p?chip(p,"out",sh.out,`P${i+1} · `):""}).join("")}</div>${st.court&&st.court.libAt>=0?`<span class="muted small">El líbero está en pista por #${esc((P[st.court.out]||{}).num)}; el cambio se hace con el central.</span>`:""}</div>
+      <div class="frow"><span class="fn">Entra</span><div class="pchips">${benchP.map(p=>chip(p,"in",sh.in)).join("")||`<span class="muted small">No queda nadie en el banquillo.</span>`}</div></div>
+      ${warns.length?`<div class="frow" style="box-shadow:inset 0 0 0 2px var(--bad)"><span class="fn" style="color:var(--bad)">Según las normas FIVB</span>${warns.map(w=>`<span class="small">· ${esc(w)}</span>`).join("")}<span class="muted small">Es un aviso: puedes hacer el cambio igualmente.</span></div>`:sh.out&&sh.in?`<div class="frow"><span class="small" style="color:var(--good);font-weight:600">Cambio válido según las normas FIVB</span></div>`:""}
+      <div class="row"><button class="btn primary" data-act="subdo" ${sh.out&&sh.in?"":"disabled"}>${warns.length?"Hacer el cambio igualmente":"Hacer el cambio"}</button></div>`;
+  }else if(sh.mode==="teamedit"){const e=effective(m.sets[sh.si]).find(x=>x.id===sh.ref);if(!e){ui.sheet=null;return}const c=r.ctx[e.id]||{};
+    const opts=e.f==="RE"||e.f==="RP"?[["RE","Error del rival","us"],["RP","Punto del rival","them"]]:[];
+    inner=`<header><div><div style="font-weight:700;font-size:20px">Corregir jugada</div><div class="muted small">Set ${sh.si+1} · rally ${c.rally} · ${c.us}-${c.them} · ${esc(evLabel(e,P))}</div></div><button class="btn sm" data-act="close">Cerrar</button></header>
+      ${opts.length?`<div class="frow"><span class="fn">Cambiar por</span><div class="opts">${opts.map(o=>`<button class="opt ${o[2]==="us"?"r-good":"r-bad"} ${e.f===o[0]?"was":""}" data-act="teamfix" data-f="${o[0]}">${o[1]}<small>${o[2]==="us"?"+1 nosotros":"+1 rival"}</small></button>`).join("")}<button class="opt r-bad" data-act="teamfix" data-f="X">Falta nuestra<small>+1 rival</small></button></div></div>`:""}
+      <div class="row"><button class="btn danger" data-act="delev">Borrar esta jugada</button></div>`;
+  }else{
+    const p=sh.p?P[sh.p]:null;
+    const isLib=p&&p.pos==="LIB";
+    const guess=predict(r);
+    const quick=isQuick(m)&&sh.mode==="new";
+    let order=sh.mode==="fault"?["X"]:sh.mode==="edit"?ORDERS[ACT.includes(sh.prev.f)&&ORDERS[sh.prev.f]?sh.prev.f:"A"].slice():quick?QUICK_ORDER.filter(k=>k!=="X"&&closing(T,k).length):ORDERS[guess].slice();
+    if(sh.mode==="edit"){const e=effective(m.sets[sh.si]).find(x=>x.id===sh.ref);if(!e){ui.sheet=null;return}}
+    if(isLib&&sh.mode!=="edit")order=order.filter(k=>!["S","A","B"].includes(k));
+    const hot=sh.mode==="new"&&!quick?order[0]:null;
+    const c=sh.mode==="edit"?r.ctx[sh.ref]||{}:null;
+    const title=sh.mode==="edit"?"Corregir jugada":sh.mode==="fault"?"Falta nuestra":p?esc(p.name):"Sin jugador";
+    const sub=sh.mode==="edit"?`Set ${sh.si+1} · rally ${c.rally} · ${c.us}-${c.them}`:sh.mode==="fault"?`Punto para el rival · ${r.cur.us}-${r.cur.them}`:p?`${POS[p.pos]||""} · ${r.cur.us}-${r.cur.them}`:`Se apunta sin jugador y queda pendiente · ${r.cur.us}-${r.cur.them}`;
+    const showChips=sh.mode==="edit"||sh.mode==="fault";
+    const chips=showChips?`<div class="frow"><span class="fn">${sh.mode==="fault"?"¿Quién? (opcional)":"Jugador"}</span><div class="pchips">${sheetPlayers(m).map(q=>`<button class="pchip${q.pos==="LIB"?" lib":""}" data-act="pickp" data-id="${q.id}" aria-pressed="${sh.p===q.id}">#${esc(q.num)} ${esc(q.name)}</button>`).join("")}<button class="pchip" data-act="pickp" data-id="" aria-pressed="${!sh.p}">${sh.mode==="fault"?"Equipo":"Sin jugador"}</button></div></div>`:"";
+    inner=`<header><div class="row">${sh.mode==="fault"?"":jersey(p,true)}<div><div style="font-weight:700;font-size:20px">${title}</div><div class="muted small">${sub}</div></div></div><button class="btn sm" data-act="close">Cerrar</button></header>
+    ${chips}
+    ${quick?`<p class="muted small" style="margin:0">Modo rápido: solo lo que cierra el rally.</p>`:""}
+    ${order.map(k=>`<div class="frow ${k===hot&&sh.mode==="new"?"hot":""}"><span class="fn">${FUND[k].n}</span>${m.zones&&sh.mode!=="fault"&&(k==="S"||k==="A")?zpick(k,sh):""}<div class="opts">${(quick?closing(T,k):FUND[k].o).map(o=>{const w=T[k]&&T[k][o[0]];const was=sh.prev&&sh.prev.f===k&&sh.prev.r===o[0];
+      return`<button class="opt ${k==="X"?"r-bad":rclass(k,o[0],T)}${was?" was":""}" data-act="log" data-f="${k}" data-r="${esc(o[0])}">${k==="X"?"":`<b>${esc(o[0])}</b>`}${esc(o[1])}${w?`<small>${w==="us"?"+1 nosotros":"+1 rival"}</small>`:""}</button>`}).join("")}</div></div>`).join("")}
+    ${sh.mode==="edit"?`<div class="row"><button class="btn danger" data-act="delev">Borrar esta jugada</button></div>`:""}`;
+  }
+  el.innerHTML=`<div class="sheet" role="dialog" aria-modal="true" aria-label="Jugada">${inner}</div>`;
+  document.body.appendChild(el);
+  const first=el.querySelector(".opt");if(first)first.focus({preventScroll:true});
+}
+
+function viewLineup(){
+  const m=S.matches[ui.liveId],lu=ui.lu;if(!m||!lu){ui.view="live";return viewLive()}
+  const P=pmap(m),pl=sheetPlayers(m),n=lu.si==="new"?m.sets.length+1:lu.si+1;
+  const six=lu.p.filter(Boolean),dup=six.length!==new Set(six).size;
+  const nEv=lu.si==="new"?0:effective(m.sets[lu.si]).length;
+  const slot=i=>`<label class="lslot"><span class="z">P${i+1}</span><select data-lu="p" data-i="${i}" aria-label="Posición ${i+1}"><option value="">—</option>${pl.filter(p=>!lu.libs.includes(p.id)).map(p=>`<option value="${p.id}" ${lu.p[i]===p.id?"selected":""}>#${esc(p.num)} ${esc(p.name)}</option>`).join("")}</select></label>`;
+  const warns=[];if(dup)warns.push("Hay un jugador en dos posiciones");if(six.length<6)warns.push(`Faltan ${6-six.length} en pista`);
+  if(six.length===6&&!dup&&!six.includes(lu.setter))warns.push("Elige el colocador: sin él no se sabe la rotación");
+  if(six.length===6&&!six.some(id=>(P[id]||{}).pos==="CEN")&&lu.libs.length)warns.push("No hay ningún central en pista: el líbero no entrará solo");
+  return`<div class="sheetcard"><div class="row spread"><h2>Alineación · set ${n}</h2>${m.example?`<span class="tag ex">ejemplo</span>`:""}</div>
+    <p class="muted small" style="margin:0">${lu.si==="new"&&m.sets.length?"Precargada con la del set anterior. ":""}Posiciones al empezar el set, vistas desde nuestro campo con la red arriba.</p>
+    ${nEv?`<div class="note warn" style="box-shadow:inset 0 0 0 2px var(--mid)"><div class="small">Este set ya tiene ${nEv} jugadas: al cambiar la alineación inicial se recalculan rotaciones, cambios y avisos.</div></div>`:""}
+    <div class="court"><div class="net" aria-hidden="true"><span>Red</span></div><div class="cgrid">${[3,2,1,4,5,0].map(slot).join("")}</div></div>
+    <div class="grid2"><label class="f">Colocador<select data-lu="setter"><option value="">—</option>${six.map(id=>P[id]).filter(Boolean).map(p=>`<option value="${p.id}" ${lu.setter===p.id?"selected":""}>#${esc(p.num)} ${esc(p.name)}</option>`).join("")}</select></label>
+      <div class="f" style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:500;color:var(--muted)">Líberos (hasta 2)<div class="pchips">${pl.filter(p=>!six.includes(p.id)).map(p=>`<button class="pchip lib" data-act="lulib" data-id="${p.id}" aria-pressed="${lu.libs.includes(p.id)}">#${esc(p.num)} ${esc(p.name)}</button>`).join("")}</div></div></div>
+    <p class="hand">¿Quién saca en el set ${n}?</p>
+    <div class="seg" role="group"><button type="button" data-act="lufirst" data-v="us" aria-pressed="${lu.first==="us"}">Nosotros</button><button type="button" data-act="lufirst" data-v="them" aria-pressed="${lu.first==="them"}">El rival</button></div>
+    ${warns.length?`<div class="small" style="color:var(--bad)">${warns.map(esc).join(" · ")}</div>`:""}
+    <div class="row"><button class="btn primary" data-act="lusave">${lu.si==="new"||!nEv?"Empezar el set "+n:"Guardar alineación"}</button><button class="btn" data-act="lupropose">Proponer por posiciones</button><button class="btn" data-act="lunone">Sin rotaciones</button><button class="btn" data-act="lucancel">Volver</button></div></div>`;
+}
+
+function viewNew(){
+  const f=ui.newForm;const pl=S.team.players.slice().sort((a,b)=>a.num-b.num);
+  return`<div class="sheetcard"><h2>Nuevo partido</h2>
+  <form id="newform" class="grid2">
+    <label class="f">Rival<input type="text" id="nf-rival" required value="${esc(f.rival)}" placeholder="Nombre del equipo rival"></label>
+    <label class="f">Fecha<input type="date" id="nf-date" value="${esc(f.date)}"></label>
+    <label class="f">Competición<input type="text" id="nf-comp" value="${esc(f.comp)}" placeholder="Liga, copa, amistoso…" list="nf-comps"><datalist id="nf-comps">${compList().filter(c=>c.k).map(c=>`<option value="${esc(c.label)}">`).join("")}</datalist></label>
+    <label class="f">Formato<select id="nf-bo"><option value="5" ${f.bestOf==5?"selected":""}>Al mejor de 5 sets</option><option value="3" ${f.bestOf==3?"selected":""}>Al mejor de 3 sets</option></select></label>
+    <label class="f">Puntos por set<input type="number" id="nf-pts" min="5" max="40" value="${f.pts}"></label>
+    <label class="f">Puntos del set decisivo<input type="number" id="nf-tie" min="5" max="40" value="${f.tie}"></label>
+  </form>
+  <p class="hand">Convocados</p>
+  <div class="checks">${pl.map(p=>`<label><input type="checkbox" class="nf-p" value="${p.id}" ${f.roster.includes(p.id)?"checked":""}> <b>#${p.num}</b> ${esc(p.name)}</label>`).join("")}</div>
+  <p class="hand">¿Cuánto detalle?</p>
+  <div class="seg" role="group"><button type="button" data-act="nf-detail" data-v="full" aria-pressed="${f.detail!=="rapido"}">Completo</button><button type="button" data-act="nf-detail" data-v="rapido" aria-pressed="${f.detail==="rapido"}">⚡ Rápido</button></div>
+  <p class="muted small" style="margin:0">${f.detail==="rapido"?"Rápido: solo apuntas cómo acaba cada rally (ace, ataque, bloqueo, error…). Pensado para cuando entrenas y apuntas a la vez. La recepción y la defensa quedan incompletas.":"Completo: apuntas cada toque (saque, recepción, ataque, defensa…). Da todas las estadísticas."} Se puede cambiar durante el partido.</p>
+  <p class="hand">¿Zonas de saque y ataque?</p>
+  <div class="seg" role="group"><button type="button" data-act="nf-zones" data-v="0" aria-pressed="${!f.zones}">No</button><button type="button" data-act="nf-zones" data-v="1" aria-pressed="${!!f.zones}">Sí</button></div>
+  <p class="muted small" style="margin:0">Con zonas, al apuntar un saque o un ataque puedes tocar hacia dónde fue (y desde dónde se atacó) antes de la evaluación. Es opcional en cada jugada y sale en los mapas de Estadísticas. Mejor con vídeo o con alguien que apunte.</p>
+  <p class="hand">¿Quién saca primero?</p>
+  <div class="seg" role="group"><button type="button" data-act="nf-first" data-v="us" aria-pressed="${f.first==="us"}">Nosotros</button><button type="button" data-act="nf-first" data-v="them" aria-pressed="${f.first==="them"}">El rival</button></div>
+  <div class="row"><button class="btn primary" data-act="create">Empezar partido</button><button class="btn" data-go="live">Cancelar</button></div></div>`;
+}
+
+/* ---------- Estadísticas ---------- */
+function blank(){return{S:{t:0,"#":0,"=":0,"+":0,"!":0,"-":0,"/":0},R:{t:0,"#":0,"+":0,"-":0,"=":0,"!":0,"/":0},A:{t:0,"#":0,"+":0,"/":0,"=":0},B:{t:0,"#":0,"+":0,"=":0,"/":0},D:{t:0,"#":0,"+":0,"=":0},E:{t:0,"#":0,"+":0,"=":0},X:{t:0},pts:0,err:0}}
+/* Reúne jugadas y rallies de los partidos elegidos, con el contexto calculado por replay */
+function gather(scope,setFilter){const list=[],rallies=[];
+  for(const m of scope){const r=replay(m);r.sets.forEach((st,si)=>{if(setFilter!=="all"&&si!==+setFilter)return;
+    st.evs.forEach(e=>{const c=r.ctx[e.id];if(!c.extra)list.push({e,m,c})});st.rallies.forEach(x=>rallies.push({x,m}))})}
+  return{list,rallies}}
+function computeStats(g){
+  const per={},T=blank();const team={ours:0,rivalErr:0,ourErr:0,rivalPts:0,soT:0,soW:0,brT:0,brW:0,rcT:0,rcW:0,fbW:0,svErr:0};const errBy={};
+  const rot={},K={};
+  const row=(m,pid)=>{const key=m.id+":"+pid;return per[key]||(per[key]=Object.assign(blank(),{p:pmap(m)[pid]||{num:"?",name:"?"},pid,on:0,pm:0}))};
+  /* modSO: side-out solo en los rallies con nuestra recepción apuntada (sin los errores de saque del rival). FBSO: de esos, los ganados con el primer ataque (K1) */
+  const fb=x=>x.win==="us"&&x.winF==="A"&&typeof x.winCx==="string"&&x.winCx.indexOf("K1")===0;
+  for(const{x,m}of g.rallies){if(x.court&&x.win)for(const pid of x.court){if(!pid)continue;const o=row(m,pid);o.on++;o.pm+=x.win==="us"?1:-1}
+    const rc=x.sv==="them"&&x.recQ!=null;
+    if(x.sv==="them"){team.soT++;if(x.win==="us")team.soW++;if(rc){team.rcT++;if(x.win==="us")team.rcW++;if(fb(x))team.fbW++}else if(x.win==="us"&&x.winF==="RE"&&x.evs.length===1)team.svErr++}else{team.brT++;if(x.win==="us")team.brW++}
+    if(x.rot){const o=rot[x.rot]||(rot[x.rot]={soT:0,soW:0,brT:0,brW:0,w:0,l:0,rcT:0,fbW:0});if(x.sv==="them"){o.soT++;if(x.win==="us")o.soW++;if(rc){o.rcT++;if(fb(x))o.fbW++}}else{o.brT++;if(x.win==="us")o.brW++}x.win==="us"?o.w++:o.l++}}
+  for(const{e,m,c}of g.list){
+    if(e.f==="T")continue;
+    if(e.f==="RE"){team.rivalErr++;continue}if(e.f==="RP"){team.rivalPts++;continue}
+    if(!ACT.includes(e.f))continue;
+    if(e.f==="A"&&c.cx){const k=K[c.cx]||(K[c.cx]={t:0,"#":0,"=":0,"/":0,"+":0});k.t++;k[e.r]=(k[e.r]||0)+1}
+    if(c.win==="us")team.ours++;
+    if(c.win==="them"){team.ourErr++;const lbl=e.f==="A"&&e.r==="/"?"Ataque bloqueado":e.f==="X"?"Faltas":FUND[e.f].n;errBy[lbl]=(errBy[lbl]||0)+1}
+    const tg=[T];if(e.p)tg.push(row(m,e.p));
+    for(const tgt of tg){const b=tgt[e.f];if(!b)continue;b.t++;if(e.f!=="X")b[e.r]=(b[e.r]||0)+1;if(c.win==="us")tgt.pts++;if(c.win==="them")tgt.err++}
+  }
+  /* En la temporada se une por id de jugador: si cambia el nombre o el dorsal, sigue siendo la misma fila (con el nombre actual de la plantilla) */
+  const cur={};S.team.players.forEach(p=>cur[p.id]=p);
+  const merged={};for(const k in per){const s=per[k];const mk=s.pid;if(cur[mk])s.p=cur[mk];if(!merged[mk]){merged[mk]=s;continue}const t=merged[mk];
+    for(const f of"SRABDEX")for(const r in s[f])t[f][r]=(t[f][r]||0)+s[f][r];t.pts+=s.pts;t.err+=s.err;t.on+=s.on;t.pm+=s.pm}
+  return{rows:Object.values(merged).sort((a,b)=>(+a.p.num)-(+b.p.num)),T,team,errBy,rot,K,hasCourt:g.rallies.some(({x})=>x.court)};
+}
+function eff(n,d){if(!d)return"–";const v=Math.round(n*100/d);return`<span class="${d<3?"low":""}" title="${n} sobre ${d}"><span class="${v>0?"pos":v<0?"neg":""}">${v>0?"+":""}${v}%</span><span class="nn">${d}</span></span>`}
+function statRow(s,label,cls,court){const S_=s.S,R=s.R,A=s.A;const pm=s.pm||0;
+  return`<tr class="${cls||""}"><td class="l">${label}</td>${court?s.on==null?`<td>–</td><td>–</td>`:`<td>${s.on||"–"}</td><td class="${pm>0?"pos":pm<0?"neg":""}">${s.on?(pm>0?"+":"")+pm:"–"}</td>`:""}<td>${s.pts}</td><td>${s.err}</td>
+  <td class="grp">${S_.t}</td><td>${S_["#"]}</td><td>${S_["="]}</td><td>${eff(S_["#"]+S_["+"]+S_["/"]-S_["="]-S_["-"],S_.t)}</td>
+  <td class="grp">${R.t}</td><td>${pctN(R["#"]+R["+"],R.t)}</td><td>${pctN(R["#"],R.t)}</td><td>${R["="]}</td>
+  <td class="grp">${A.t}</td><td>${A["#"]}</td><td>${A["="]}</td><td>${A["/"]}</td><td>${pctN(A["#"],A.t)}</td><td>${eff(A["#"]-A["="]-A["/"],A.t)}</td>
+  <td class="grp">${s.B["#"]}</td><td>${s.D.t}</td><td>${s.X.t}</td></tr>`}
+function momentum(m,r,setFilter){
+  const ev=[];r.sets.forEach((st,si)=>{if(setFilter==="all"||si===+setFilter)st.rallies.forEach(x=>ev.push({s:si,d:x.us-x.them+(x.win==="us"?1:-1)}))});if(ev.length<2)return"";
+  const W=640,H=200,pl=16,pr=16,pt=28,pb=16;let d=0;const pts=[];let lastS=-1;const seps=[];
+  ev.forEach((e,i)=>{if(e.s!==lastS){seps.push({i,s:e.s});lastS=e.s}pts.push(e.d)});
+  const mx=Math.max(4,...pts.map(Math.abs));const mid=pt+(H-pt-pb)/2;const half=(H-pt-pb)/2;
+  const x=i=>pl+i*(W-pl-pr)/(ev.length-1);const y=v=>mid-v*half/mx;
+  const segs=seps.map((s,k)=>{const end=k+1<seps.length?seps[k+1].i:ev.length;let p="";for(let i=s.i;i<end;i++)p+=(i===s.i?"M":"L")+x(i).toFixed(1)+" "+y(pts[i]).toFixed(1);return`<path class="lu" d="${p}"/>`}).join("");
+  return`<div class="zone chart"><p class="hand">Quién iba por delante, punto a punto</p>
+  <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Diferencia de puntos a lo largo del partido">
+    <line class="zero" x1="${pl}" x2="${W-pr}" y1="${mid}" y2="${mid}"/>
+    ${seps.map(s=>`<line class="ax" x1="${x(s.i)}" x2="${x(s.i)}" y1="${pt-4}" y2="${H-pb}"/><text x="${x(s.i)+5}" y="${pt-10}">Set ${s.s+1}</text>`).join("")}
+    <text class="h us" x="${W-pr}" y="${pt+14}" text-anchor="end">+${mx} nosotros</text><text class="h them" x="${W-pr}" y="${H-pb-4}" text-anchor="end">+${mx} rival</text>
+    ${segs}</svg>
+  <div class="muted small">Por encima de la línea central íbamos ganando. Cada set empieza de cero.</div></div>`;
+}
+/* Temporada: sin el ejemplo, sin los partidos marcados «no cuenta» y, si se elige, solo una competición (sin distinguir mayúsculas, tildes ni espacios) */
+const compKey=s=>String(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").trim().toLowerCase().replace(/\s+/g," ");
+function compList(){const o={};Object.values(S.matches).filter(m=>!m.example&&!m.noSeason).sort((a,b)=>(a.date||"").localeCompare(b.date||"")||String(a.id).localeCompare(String(b.id))).forEach(m=>{const k=compKey(m.comp);if(!o[k])o[k]={k,label:String(m.comp||"").trim()||"Sin competición",n:0};o[k].n++});return Object.values(o)}
+function seasonMatches(){const base=sortedMatches().filter(m=>!m.example&&!m.noSeason);const c=ui.statsComp;return c!=null?base.filter(m=>"c:"+compKey(m.comp)===c):base}
+/* ui.statsComp = null (todas) o "c:"+clave de la competición */
+function compLabel(){const c=ui.statsComp;if(c==null)return"";const x=compList().find(y=>"c:"+y.k===c);return x?x.label:""}
+function checkComp(){if(ui.statsComp!=null&&!compList().some(c=>"c:"+c.k===ui.statsComp))ui.statsComp=null}
+function statsScope(){const season=ui.statsId==="season";const ms=sortedMatches();return{season,ms,scope:season?seasonMatches():[S.matches[ui.statsId]]}}
+/* Mapas de saque y ataque (solo jugadas con zona) y distribución del ataque por zona de origen */
+function mapZone(g,st){if(!g.list.some(({e})=>(e.f==="S"||e.f==="A")&&(e.z||e.zo)))return"";
+  const k=ui.mapK==="S"?"S":"A";const withAny=st.rows.filter(x=>x.pid&&g.list.some(({e})=>e.f===k&&e.p===x.pid&&(e.z||e.zo)));
+  if(ui.mapP&&ui.mapP!=="all"&&!withAny.some(x=>x.pid===ui.mapP))ui.mapP="all";const pid=ui.mapP||"all";
+  const ev=g.list.filter(({e})=>e.f===k&&(pid==="all"||e.p===pid)).map(x=>x.e);const wz=ev.filter(e=>e.z);const tot=wz.length;
+  const cell=z=>{const es=wz.filter(e=>e.z===z),n=es.length,good=es.filter(e=>e.r==="#").length,sh=tot?n/tot:0;
+    return`<div class="mc" style="background:color-mix(in srgb,var(--them) ${Math.round(sh*38)}%,var(--fill))"><span class="zn">${z}</span><b>${n||""}</b><span>${n?(k==="S"?pct(n,tot)+(good?" · "+nn(good,"ace","aces"):""):pct(good,n)+" pto"):""}</span></div>`};
+  const wo=ev.filter(e=>e.zo);const orig=k==="A"&&wo.length?`<p class="hand" style="margin-top:4px">Por dónde atacamos</p><div class="tablebox"><table class="st"><thead><tr><th class="l">Zona</th><th>Tot</th><th>% ataques</th><th>Pto</th><th>% Pto</th><th>Efic.</th></tr></thead><tbody>${ZO.flat().map(z=>{const es=wo.filter(e=>e.zo===z);if(!es.length)return"";const c=r=>es.filter(e=>e.r===r).length;
+      return`<tr><td class="l"><b>${z}</b> <span class="muted small">${{4:"punta",3:"centro",2:"opuesto",5:"zaguero 5",6:"zaguero 6 (pipe)",1:"zaguero 1"}[z]}</span></td><td>${es.length}</td><td>${pct(es.length,wo.length)}</td><td>${c("#")}</td><td>${pctN(c("#"),es.length)}</td><td>${eff(c("#")-c("=")-c("/"),es.length)}</td></tr>`}).join("")}</tbody></table></div><p class="muted small" style="margin:0">Sirve para ver el reparto de la colocadora: cuánto juega por cada zona y con qué acierto.</p>`:"";
+  return`<div class="zone"><div class="row spread"><p class="hand">Mapas</p><div class="row" style="gap:8px"><div class="seg" role="group" aria-label="Mapa"><button data-act="mapk" data-v="A" aria-pressed="${k==="A"}">Ataque</button><button data-act="mapk" data-v="S" aria-pressed="${k==="S"}">Saque</button></div>
+    <select id="map-sel" aria-label="Jugador del mapa" style="width:auto;max-width:100%"><option value="all">Todo el equipo</option>${withAny.map(x=>`<option value="${x.pid}" ${x.pid===pid?"selected":""}>#${esc(x.p.num)} ${esc(x.p.name)}</option>`).join("")}</select></div></div>
+    <p class="muted small" style="margin:0">Hacia dónde ${k==="S"?"sacamos":"atacamos"}, en el campo rival visto desde el nuestro. ${tot?`${tot} de ${nn(ev.length,k==="S"?"saque":"ataque",k==="S"?"saques":"ataques")} ${tot===1?"lleva":"llevan"} zona.`:"Ninguno lleva zona de destino."}</p>
+    <div class="map">${ZR.flat().map(cell).join("")}<div class="mnet">Red</div></div>${orig}</div>`}
+/* Evolución de un jugador partido a partido (por id, en la temporada elegida) */
+function evoZone(scope,rows){const pl=rows.filter(x=>x.pid);if(!pl.length||scope.length<2)return"";
+  if(!ui.evoP||!pl.some(x=>x.pid===ui.evoP))ui.evoP=pl.slice().sort((a,b)=>b.pts-a.pts)[0].pid;
+  const list=scope.slice().reverse().map(m=>{const s=computeStats(gather([m],"all")).rows.find(x=>x.pid===ui.evoP);return{m,s}});
+  const mx=Math.max(1,...list.map(({s})=>s?s.pts:0));
+  return`<div class="zone"><div class="row spread"><p class="hand">Evolución por partido</p><select id="evo-sel" aria-label="Jugador" style="width:auto;max-width:100%">${pl.map(x=>`<option value="${x.pid}" ${x.pid===ui.evoP?"selected":""}>#${esc(x.p.num)} ${esc(x.p.name)}</option>`).join("")}</select></div>
+    <div class="tablebox"><table class="st"><thead><tr><th class="l">Partido</th><th>Pts</th><th></th><th>Err</th><th>Ataque</th><th>Efic.</th><th>Rec. pos.</th><th>+/−</th></tr></thead><tbody>${list.map(({m,s})=>{if(!s)return`<tr><td class="l"><span class="cl">${fdate(m.date)} · ${esc(m.rival)}</span></td><td colspan="7" class="muted">no jugó o sin jugadas</td></tr>`;const A=s.A,R=s.R;
+      return`<tr><td class="l"><span class="cl">${fdate(m.date)} · ${esc(m.rival)}</span></td><td><b>${s.pts}</b></td><td style="width:90px"><span class="bar" style="display:block"><span class="t" style="display:block;height:8px;background:var(--fill);border-radius:99px;overflow:hidden"><i style="display:block;height:100%;width:${s.pts*100/mx}%;background:var(--us)"></i></span></span></td><td>${s.err}</td><td>${A.t?A["#"]+"/"+A.t:"–"}</td><td>${eff(A["#"]-A["="]-A["/"],A.t)}</td><td>${pctN(R["#"]+R["+"],R.t)}</td><td class="${s.pm>0?"pos":s.pm<0?"neg":""}">${s.on?(s.pm>0?"+":"")+s.pm:"–"}</td></tr>`}).join("")}</tbody></table></div>
+    <p class="muted small" style="margin:0">Del partido más antiguo al más reciente. Ataque: puntos / ataques.</p></div>`}
+function viewStats(){
+  const ms=sortedMatches();
+  if(!ms.length)return`<div class="sheetcard empty"><h2>Aún no hay estadísticas</h2><p class="muted">Cuando apuntes jugadas en un partido, aquí verás puntos, errores y eficacia por jugador.</p><button class="btn primary" data-go="live">Ir al partido</button></div>`;
+  if(!ui.statsId||(ui.statsId!=="season"&&!S.matches[ui.statsId]))ui.statsId=ms[0].id;
+  checkComp();const{season,scope}=statsScope();
+  const m=season?null:scope[0];
+  const r=m?replay(m):null;
+  if(m&&ui.statsSet!=="all"&&+ui.statsSet>=m.sets.length)ui.statsSet="all";
+  const g=gather(scope,season?"all":ui.statsSet);
+  const st=computeStats(g);const t=st.team;
+  const sel=`<select id="stats-sel" aria-label="Partido">${ms.map(x=>`<option value="${x.id}" ${x.id===ui.statsId?"selected":""}>${fdate(x.date)} · vs ${esc(x.rival)}${x.example?" (ejemplo)":""}</option>`).join("")}<option value="season" ${season?"selected":""}>Temporada: todos mis partidos (${ms.filter(x=>!x.example&&!x.noSeason).length})</option></select>`;
+  const setSeg=m?`<div class="seg" role="group" aria-label="Set">${["all",...m.sets.map((_,i)=>String(i))].map(v=>`<button data-act="statsset" data-v="${v}" aria-pressed="${ui.statsSet===v}">${v==="all"?"Todo el partido":"Set "+(+v+1)}</button>`).join("")}</div>`:"";
+  const cl=season?compList():[];
+  const nNo=ms.filter(x=>!x.example&&x.noSeason).length;
+  const compSeg=season&&cl.length>1?`<div class="seg" role="group" aria-label="Competición"><button data-act="statscomp" data-v="" aria-pressed="${ui.statsComp==null}">Todas</button>${cl.map(c=>`<button data-act="statscomp" data-v="${esc("c:"+c.k)}" aria-pressed="${ui.statsComp==="c:"+c.k}">${esc(c.label)} · ${c.n}</button>`).join("")}</div>`:"";
+  const nsNote=season&&nNo?`<div class="muted small">${nn(nNo,"partido no cuenta","partidos no cuentan")} en la temporada (se cambia en Partidos › Datos).</div>`:"";
+  const won=t.ours+t.rivalErr,lost=t.ourErr+t.rivalPts;
+  const errMax=Math.max(1,...Object.values(st.errBy));
+  const errBars=Object.entries(st.errBy).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div class="bar"><span>${esc(k)}</span><span class="t"><i style="width:${v*100/errMax}%"></i></span><span class="n">${v}</span></div>`).join("");
+  const result=m?`<div class="setline">${setChips(r,false)}<span>${r.wonUs}-${r.wonThem}${r.finished?"":" · en juego"}</span></div>`:"";
+  const nq=scope.filter(isQuick).length;
+  let ngap=0;scope.forEach(x=>replay(x).sets.forEach((st,si)=>{if(season||ui.statsSet==="all"||si===+ui.statsSet)ngap+=st.gap}));
+  const gnote=ngap?`<div class="note" style="box-shadow:inset 0 0 0 2px var(--mid)"><div class="small">${nn(ngap,"punto quedó","puntos quedaron")} sin apuntar («Me he perdido puntos»). Cuentan en el marcador, pero no en side-out, break, rotaciones ni +/−: esos porcentajes salen de los rallies apuntados.</div></div>`:"";
+  const qnote=nq?`<div class="note" style="box-shadow:inset 0 0 0 2px var(--mid)"><div class="small">${season?`${nq} de ${scope.length} partidos se apuntaron`:"Este partido se apuntó"} en modo rápido: solo cómo acabó cada rally. Recepción, defensa, eficacia de saque y K1/K2 están incompletas${season?" en esos partidos":""}; marcador, side-out, break, rotaciones y puntos y errores por jugador sí son completos.</div></div>`:"";
+  return`<div class="zone"><div class="row spread"><h2>Estadísticas</h2><div class="row"><button class="btn sm" data-act="img">Imagen para el equipo</button><button class="btn sm" data-act="print">Hoja para imprimir</button><button class="btn sm" data-act="copy">Copiar resumen</button><button class="btn sm" data-act="csv">Descargar CSV</button></div></div>
+    <div>${sel}</div>${setSeg}${compSeg}${nsNote}${result}</div>
+  ${qnote}${gnote}
+  <div class="zone"><div class="figs">
+    <div class="fig us"><span class="k">Puntos ganados</span><span class="v">${won}</span><span class="s">${t.ours} nuestros · ${t.rivalErr} por error del rival</span></div>
+    <div class="fig them"><span class="k">Puntos regalados</span><span class="v">${t.ourErr}</span><span class="s">${pct(t.ourErr,lost)} de los ${lost} perdidos fueron fallo nuestro</span></div>
+    <div class="fig"><span class="k">Side-out</span><span class="v">${pct(t.soW,t.soT)}</span><span class="s">${t.soW} de ${t.soT} con saque del rival</span></div>
+    <div class="fig"><span class="k">Break point</span><span class="v">${pct(t.brW,t.brT)}</span><span class="s">${t.brW} de ${t.brT} con nuestro saque</span></div>
+    <div class="fig"><span class="k">Side-out recibiendo</span><span class="v">${pct(t.rcW,t.rcT)}</span><span class="s">${t.rcT?`${t.rcW} de ${t.rcT} con recepción apuntada`:"Apunta las recepciones para verlo"}${t.svErr?` · sin ${nn(t.svErr,"error","errores")} de saque rival`:""}</span></div>
+    <div class="fig"><span class="k">Al primer ataque</span><span class="v">${pct(t.fbW,t.rcT)}</span><span class="s">${t.rcT?`${t.fbW} de ${t.rcT} recepciones acaban en punto en el K1`:"Necesita recepciones y ataques"}</span></div>
+  </div></div>
+  ${m?momentum(m,r,ui.statsSet):""}
+  ${rotZone(st)}
+  ${mapZone(g,st)}
+  ${season?evoZone(scope,st.rows):""}
+  <div class="zone"><p class="hand them">Dónde fallamos</p>${errBars?`<div class="bars">${errBars}</div>`:`<p class="muted">Sin errores apuntados en esta selección.</p>`}</div>
+  <div class="zone"><p class="hand">Por jugador</p>
+  ${st.rows.length?`<div class="tablebox"><table class="st"><thead>
+    <tr><th class="l"></th>${st.hasCourt?`<th colspan="2" class="grp">En pista</th>`:""}<th colspan="2"></th><th colspan="4" class="grp">Saque</th><th colspan="4" class="grp">Recepción</th><th colspan="6" class="grp">Ataque</th><th colspan="3" class="grp">Otros</th></tr>
+    <tr><th class="l">Jugador</th>${st.hasCourt?`<th title="Rallies jugados en pista">Rallies</th><th title="Rallies ganados menos perdidos con el jugador en pista">+/−</th>`:""}<th>Pts</th><th>Err</th><th class="grp">Tot</th><th>Ace</th><th>Err</th><th>Efic.</th><th class="grp">Tot</th><th>Pos.</th><th>Perf.</th><th>Err</th><th class="grp">Tot</th><th>Pto</th><th>Err</th><th>Blq</th><th>% Pto</th><th>Efic.</th><th class="grp">Bloq.</th><th>Def.</th><th>Faltas</th></tr></thead>
+    <tbody>${st.rows.map(s=>statRow(s,`<span class="num">${esc(s.p.num)}</span> <span class="cl">${esc(s.p.name)}</span>`,"",st.hasCourt)).join("")}${statRow(st.T,"Equipo","tot",st.hasCourt)}</tbody></table></div>
+    ${helpBox()}
+    <p class="muted small" style="margin:0">El número pequeño junto a cada porcentaje es cuántas acciones hay detrás; con menos de 3 sale atenuado. Eficacia de saque = (aces + positivos − errores) / saques. Eficacia de ataque = (puntos − errores − bloqueados) / ataques. Recepción positiva = perfectas (#) + positivas (+). El equipo incluye las jugadas sin jugador asignado.${st.hasCourt?" En pista: rallies que ha jugado (solo en sets con alineación; el líbero cuenta cuando está dentro) y +/− = rallies ganados menos perdidos con él en pista.":""}</p>`:`<p class="muted">Sin jugadas de jugadores en esta selección.</p>`}</div>`;
+}
+
+function helpBox(){const H=[["Side-out","Rallies ganados cuando saca el rival. Es la capacidad de recuperar el saque."],["Break","Rallies ganados con nuestro saque."],["Side-out recibiendo (modSO)","Side-out contando solo los rallies con nuestra recepción apuntada: quita los errores de saque del rival, que no dependen de nosotros."],["Al primer ataque (FBSO)","Recepciones tras las que ganamos el punto en el primer ataque (K1), sin defensa de por medio."],["Zonas","Campo rival visto desde el nuestro: 2-3-4 junto a la red, 9-8-7 en medio, 1-6-5 al fondo. Origen del ataque en nuestro campo: 4-3-2 delante, 5-6-1 detrás."],["Rotación R1…R6","Dónde está el colocador al empezar el rally: R1 = en P1."],["K1 / K2","K1: el primer ataque después de recibir. K2: el contraataque, después de una defensa o un bloqueo."],["Eficacia","Lo bueno menos lo malo, partido por el total. Puede ser negativa."],["% Pto","Ataques que acaban en punto, sobre el total de ataques."],["Recepción positiva","Recepciones perfectas (#) o positivas (+)."],["+/−","Rallies ganados menos perdidos mientras el jugador estaba en pista."],["#  +  !  −  /  =","Perfecto o punto · positivo · en juego · negativo · bloqueado (en saque: positivo) · error."]];
+  return`<details class="help"><summary>¿Qué significa cada cifra?</summary><dl>${H.map(([k,v])=>`<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl></details>`}
+
+/* Side-out y break por rotación (posición del colocador) y ataque K1 frente a K2 */
+function rotZone(st){const R=st.rot,K=st.K;const has=Object.keys(R).length;
+  const rows=[1,2,3,4,5,6].map(n=>{const o=R[n];if(!o)return`<tr><td class="l"><b>R${n}</b> <span class="muted small">P${n}</span></td><td colspan="5" class="muted">–</td></tr>`;const d=o.w-o.l;
+    return`<tr><td class="l"><b>R${n}</b> <span class="muted small">P${n}</span></td><td>${pctN(o.soW,o.soT)}</td><td>${pctN(o.fbW,o.rcT)}</td><td>${pctN(o.brW,o.brT)}</td><td>${o.w}-${o.l}</td><td class="${d>0?"pos":d<0?"neg":""}">${d>0?"+":""}${d}</td></tr>`}).join("");
+  const KL=[["K1+","K1 · recepción buena"],["K1-","K1 · recepción mala"],["K1?","K1 · sin recepción"],["K2","K2 · contraataque"]];
+  const krows=KL.filter(([k])=>K[k]).map(([k,l])=>{const o=K[k];return`<tr><td class="l">${l}</td><td>${o.t}</td><td>${o["#"]}</td><td>${o["="]}</td><td>${o["/"]}</td><td>${pctN(o["#"],o.t)}</td><td>${eff(o["#"]-o["="]-o["/"],o.t)}</td></tr>`}).join("");
+  const rz=has?`<div class="zone"><p class="hand">Por rotación</p><div class="tablebox"><table class="st rtab"><thead><tr><th class="l">Rotación</th><th>Side-out</th><th title="Recepciones ganadas con el primer ataque">1.er ataque</th><th>Break</th><th>G-P</th><th>+/−</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <p class="muted small" style="margin:0">R1…R6 = dónde está el colocador al empezar el rally. Side-out: rallies ganados con saque del rival. 1.er ataque (FBSO): recepciones que acaban en punto en el primer ataque. Break: rallies ganados con nuestro saque. G-P: rallies ganados y perdidos.</p></div>`:`<div class="zone"><p class="hand">Por rotación</p><p class="muted" style="margin:0">Pon la alineación de cada set (con el colocador) para ver side-out y break en cada rotación.</p></div>`;
+  return rz+`<div class="zone"><p class="hand">Ataque por fase</p>${krows?`<div class="tablebox"><table class="st ktab"><thead><tr><th class="l">Fase</th><th>Tot</th><th>Pto</th><th>Err</th><th>Blq</th><th>% Pto</th><th>Efic.</th></tr></thead><tbody>${krows}</tbody></table></div>
+    <p class="muted small" style="margin:0">K1: primer ataque después de nuestra recepción (buena = # o +; mala = −). K2: cualquier ataque después de una defensa, un bloqueo o nuestro saque.</p>`:`<p class="muted" style="margin:0">Sin ataques apuntados en esta selección.</p>`}</div>`}
+
+function summaryText(){
+  const{season,scope}=statsScope();
+  const st=computeStats(gather(scope,season?"all":ui.statsSet)),t=st.team;let out="";
+  if(season)out+=`${S.team.name} · Temporada${compLabel()?" · "+compLabel():""} (${nn(scope.length,"partido","partidos")})\n`;else{const m=scope[0],r=replay(m);out+=`${S.team.name} ${r.wonUs}-${r.wonThem} ${m.rival} (${fdate(m.date)})${ui.statsSet!=="all"?` · solo el set ${+ui.statsSet+1}`:""}\n`+r.sets.filter(s=>s.us+s.them).map(s=>s.us+"-"+s.them).join(", ")+"\n"}
+  out+=`Side-out ${pct(t.soW,t.soT)} (${t.soT}) · Break ${pct(t.brW,t.brT)} (${t.brT})${t.rcT?` · Side-out recibiendo ${pct(t.rcW,t.rcT)} · Al primer ataque ${pct(t.fbW,t.rcT)} (${t.rcT})`:""}\nPuntos nuestros ${t.ours} · Errores rival ${t.rivalErr} · Errores nuestros ${t.ourErr}\n`;
+  const rk=Object.keys(st.rot);if(rk.length)out+="Side-out por rotación: "+rk.map(n=>`R${n} ${pct(st.rot[n].soW,st.rot[n].soT)} (${st.rot[n].soT})`).join(", ")+"\n";
+  const top=st.rows.slice().sort((a,b)=>b.pts-a.pts).slice(0,3).filter(s=>s.pts);
+  if(top.length)out+="Más puntos: "+top.map(s=>`#${s.p.num} ${s.p.name} ${s.pts}`).join(", ")+"\n";
+  const eb=Object.entries(st.errBy).sort((a,b)=>b[1]-a[1]);if(eb.length)out+="Errores: "+eb.map(([k,v])=>k+" "+v).join(", ")+"\n";
+  return out;
+}
+function csvText(){
+  const{scope}=statsScope();
+  const q=v=>{v=v==null?"":String(v);return/[",;\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
+  /* Texto libre que empieza por = + - @ : se le pone ' delante para que la hoja de cálculo no lo ejecute como fórmula */
+  const tx=v=>{v=v==null?"":String(v);return/^[=+\-@\t\r]/.test(v)?"'"+v:v};
+  const rows=[["fecha","rival","competicion","set","rally","marcador_nosotros","marcador_rival","saca","rotacion","fase","complejo","dorsal","jugador","fundamento","codigo","resultado","punto_para","entra","sale","hora","video_seg","zona_origen","zona_destino"]];
+  scope.forEach(m=>{const P=pmap(m),r=replay(m);r.sets.forEach(st=>st.evs.forEach(e=>{const c=r.ctx[e.id];if(c.extra)return;const p=P[e.p];
+    const fn=e.f==="T"?"Tiempo muerto":e.f==="SUB"?"Cambio":e.f==="LIB"?"Cambio de líbero":e.f==="GAP"?"Puntos sin apuntar":TEAMF[e.f]||FUND[e.f].n;const gp=e.f==="GAP";const pi=P[e.pin],po=P[e.pout];
+    rows.push([m.date,tx(m.rival),tx(m.comp),c.set+1,c.rally,gp?e.us:c.us+(c.win==="us"?1:0),gp?e.them:c.them+(c.win==="them"?1:0),c.sv==="us"?"nosotros":"rival",c.rot||"",c.ph==="SO"?"side-out":"break",c.cx||"",p?p.num:"",p?tx(p.name):"",fn,e.f==="T"?(e.side==="us"?"nuestro":"rival"):e.r,ACT.includes(e.f)?optLabel(e.f,e.r):"",c.win==="us"?"nosotros":c.win==="them"?"rival":"",pi?pi.num:"",po?po.num:"",e.t?new Date(e.t).toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"}):"",e.vt!=null?e.vt:"",e.zo||"",e.z||""])}))});
+  return"﻿"+rows.map(r=>r.map(q).join(";")).join("\n");
+}
+
+function viewHistory(){
+  const ms=sortedMatches();
+  if(!ms.length)return`<div class="sheetcard empty"><h2>Todavía no hay partidos</h2><p class="muted">Cada partido que empieces queda guardado aquí con su marcador y sus jugadas.</p><button class="btn primary" data-act="new" ${S.team.players.length?"":"disabled"}>Nuevo partido</button></div>`;
+  return`<div class="zone"><div class="row spread"><h2>Partidos</h2><div class="row"><button class="btn sm" data-go="follow">Seguir un directo</button><button class="btn sm primary" data-act="new" ${S.team.players.length?"":"disabled"}>Nuevo partido</button></div></div>
+  <div class="mlist">${ms.map(m=>{const r=replay(m);const w=r.wonUs>r.wonThem;const conf=ui.confirmDel===m.id;
+    return`<div class="mitem"><span class="res ${r.finished?(w?"w":"l"):""}">${r.wonUs}-${r.wonThem}</span>
+    <div style="min-width:0"><div class="row" style="gap:8px"><b style="font-size:17px">vs ${esc(m.rival)}</b>${m.example?`<span class="tag ex">ejemplo</span>`:""}${r.finished?"":`<span class="tag live">en juego</span>`}${m.noSeason?`<span class="tag ns">no cuenta en la temporada</span>`:""}</div>
+    <div class="muted small">${fdate(m.date)}${m.comp?" · "+esc(m.comp):""} · ${r.sets.filter(s=>s.us+s.them).map(s=>s.us+"-"+s.them).join(", ")||"sin puntos"}</div></div>
+    <div class="row acts">${conf?`<span class="small">¿Borrar este partido?</span><button class="btn sm danger" data-act="del" data-id="${m.id}">Sí, borrar</button><button class="btn sm" data-act="delno">No</button>`:
+      `<button class="btn sm" data-act="open" data-id="${m.id}">${r.finished?"Marcador":"Continuar"}</button><button class="btn sm" data-act="tostats" data-id="${m.id}">Estadísticas</button>${m.example?"":`<button class="btn sm" data-act="sendm" data-id="${m.id}" title="Fichero para el entrenador u otro móvil">Enviar</button><button class="btn sm" data-act="medit" data-id="${m.id}" aria-expanded="${ui.medit===m.id}">Datos</button>`}<button class="btn sm danger" data-act="delask" data-id="${m.id}">Borrar</button>`}</div>
+    ${ui.medit===m.id&&!m.example?`<div class="frow medit"><div class="grid2"><label class="f">Rival<input type="text" id="me-rival" value="${esc(m.rival)}"></label><label class="f">Fecha<input type="date" id="me-date" value="${esc(m.date)}"></label><label class="f">Competición<input type="text" id="me-comp" value="${esc(m.comp||"")}" placeholder="Liga, copa, amistoso…" list="me-comps"></label></div>
+      <datalist id="me-comps">${compList().filter(c=>c.k).map(c=>`<option value="${esc(c.label)}">`).join("")}</datalist>
+      <label class="row" style="gap:10px;font-size:15px"><input type="checkbox" id="me-ns" ${m.noSeason?"checked":""}> No contar en la temporada <span class="muted small">(amistoso, prueba, partido de otro equipo…)</span></label>
+      <div class="row"><button class="btn sm primary" data-act="meditsave" data-id="${m.id}">Guardar</button><button class="btn sm" data-act="medit" data-id="${m.id}">Cancelar</button></div></div>`:""}</div>`}).join("")}</div></div>`;
+}
+
+function viewTeam(){
+  const pl=S.team.players.slice().sort((a,b)=>a.num-b.num);
+  const ex=S.matches.ejemplo;const T=S.team.table||DEFAULT_TABLE;
+  return`<div class="zone"><h2>Equipo</h2>
+  <label class="f">Nombre del equipo<input type="text" id="team-name" value="${esc(S.team.name)}"></label></div>
+  <div class="zone"><p class="hand">Plantilla · ${pl.length} jugadores</p>
+  ${pl.length?`<div style="display:flex;flex-direction:column;gap:8px">${pl.map(p=>`<div class="prow" data-pid="${p.id}">${jersey(p)}
+    <input type="number" min="0" max="99" aria-label="Dorsal" id="pn-${p.id}" data-field="num" value="${p.num}">
+    <input type="text" aria-label="Nombre" id="pm-${p.id}" data-field="name" value="${esc(p.name)}">
+    <select aria-label="Posición" id="pp-${p.id}" data-field="pos">${Object.entries(POS).map(([k,v])=>`<option value="${k}" ${p.pos===k?"selected":""}>${v}</option>`).join("")}</select>
+    ${ui.confirmRmp===p.id?`<span class="rmpask"><button class="btn sm danger" data-act="rmp" data-id="${p.id}">Quitar</button><button class="btn sm" data-act="rmpno">No</button></span>`:`<button class="btn sm danger" data-act="rmp" data-id="${p.id}" aria-label="Quitar a ${esc(p.name)}">✕</button>`}</div>`).join("")}</div>`:
+    `<p class="muted">Aún no hay jugadores. Añade cada uno con su dorsal y su posición. El líbero lleva camiseta de otro color y no le salen saque, ataque ni bloqueo.</p>`}
+  <form id="addp" class="prow" style="margin-top:6px"><span></span>
+    <input type="number" min="0" max="99" id="np-num" placeholder="Nº" aria-label="Dorsal nuevo" required>
+    <input type="text" id="np-name" placeholder="Nombre" aria-label="Nombre nuevo" required>
+    <select id="np-pos" aria-label="Posición nueva">${Object.entries(POS).map(([k,v])=>`<option value="${k}">${v}</option>`).join("")}</select>
+    <button class="btn sm primary" type="submit" aria-label="Añadir jugador">+</button></form>
+  ${!pl.length&&ex?`<div><button class="btn sm" data-act="copyex">Usar la plantilla del ejemplo para probar</button></div>`:""}
+  <details class="help" id="bulk" ${ui.bulk?"open":""}><summary>Pegar o copiar la plantilla entera</summary>
+    <p class="muted small">Una línea por jugador: dorsal, nombre y, si quieres, la posición (COL, REC, CEN, OPU, LIB, UNI). Por ejemplo <code>4 Marta REC</code>. Si el dorsal ya existe, se actualiza; nunca se borra a nadie.</p>
+    <textarea id="bulk-txt" rows="5" placeholder="3 Laia COL&#10;4 Marta REC&#10;5 Ona LIB">${esc(ui.bulk&&ui.bulk.txt||"")}</textarea>
+    ${ui.bulk&&ui.bulk.prev?`<div class="small" style="margin-top:6px">${ui.bulk.prev}</div>`:""}
+    <div class="row" style="margin-top:8px"><button class="btn sm" data-act="bulkcheck">Revisar</button>${ui.bulk&&ui.bulk.ok?`<button class="btn sm primary" data-act="bulkdo">Añadir ${ui.bulk.ok.length}</button>`:""}<button class="btn sm" data-act="bulkcopy" ${pl.length?"":"disabled"}>Copiar plantilla</button></div></details>
+  </div>
+  <div class="zone"><p class="hand">Pantalla</p><label class="row" style="gap:10px;font-size:15px"><input type="checkbox" id="bigtxt" ${bigText()?"checked":""}> Letra y botones más grandes</label><span class="muted small">Se guarda solo en este dispositivo.</span></div>
+  ${backupZone()}
+  <div class="zone"><div class="row spread"><p class="hand">Qué cierra cada jugada</p><button class="btn sm" data-act="tablereset">Valores por defecto</button></div>
+    <p class="muted small" style="margin:0">Para cada fundamento y evaluación, quién se lleva el punto. Se aplica a los partidos nuevos; cada partido guarda la tabla con la que se apuntó.</p>
+    <div class="otab">${["S","R","A","B","D","E","X"].map(f=>`<div class="orow"><span class="fn">${FUND[f].n}</span><div class="ocells">${FUND[f].o.map(o=>{const w=T[f]&&T[f][o[0]]||"";
+      return`<label class="ocell">${f==="X"?"":`<b>${esc(o[0])}</b> `}${esc(o[1])}<select data-otab="${f}" data-r="${esc(o[0])}"><option value="" ${!w?"selected":""}>Sigue el rally</option><option value="us" ${w==="us"?"selected":""}>Punto nuestro</option><option value="them" ${w==="them"?"selected":""}>Punto rival</option></select></label>`}).join("")}</div></div>`).join("")}</div></div>`;
+}
+
+/* Plantilla en bloque: "4 Marta REC" por línea. Devuelve qué se añade, qué se actualiza y qué no se entiende */
+const POSALIAS={COL:"COL",COLOCADOR:"COL",COLOCADORA:"COL",S:"COL",REC:"REC",RECEPTOR:"REC",RECEPTORA:"REC",PUNTA:"REC",OH:"REC",CEN:"CEN",CENTRAL:"CEN",MB:"CEN",OPU:"OPU",OPUESTO:"OPU",OPUESTA:"OPU",OP:"OPU",LIB:"LIB",LIBERO:"LIB",LÍBERO:"LIB",L:"LIB",UNI:"UNI",UNIVERSAL:"UNI"};
+function parseRoster(txt){const ok=[],bad=[],seen=new Set();
+  txt.split(/\r?\n/).map(l=>l.trim()).filter(Boolean).forEach(l=>{const m=l.match(/^#?(\d{1,2})[\s.,;:\-]+(.+)$/);if(!m){bad.push(l);return}
+    let name=m[2].trim(),pos=null;const w=name.split(/[\s,;]+/);const last=(w[w.length-1]||"").toUpperCase();if(w.length>1&&POSALIAS[last]){pos=POSALIAS[last];name=w.slice(0,-1).join(" ").replace(/[,;\s]+$/,"")}
+    const num=+m[1];if(seen.has(num)){bad.push(l+" (dorsal repetido)");return}seen.add(num);ok.push({num,name,pos})});
+  return{ok,bad}}
+function bigText(){try{return localStorage.getItem(LS_KEY+"-letra")==="grande"}catch(e){return false}}
+function applyBig(){document.documentElement.classList.toggle("big",bigText())}
+
+const nn=(n,one,many)=>n+" "+(n===1?one:many);
+function backupZone(){const lb=lastBackup(),n=Object.values(S.matches).filter(m=>!m.example).length,rs=ui.restore;
+  const when=lb?new Date(lb).toLocaleDateString("es-ES",{day:"numeric",month:"short"}):null;
+  let body=`<div class="row"><button class="btn sm primary" data-act="backup" ${n||S.team.players.length?"":"disabled"}>Descargar copia</button><button class="btn sm" data-act="restoreopen">Abrir una copia o un partido recibido</button></div>`;
+  if(rs&&rs.open){body+=rs.d?`<div class="frow"><span class="small"><b>Esta copia trae:</b> ${nn(rs.add,"partido nuevo","partidos nuevos")}${rs.back?` (${rs.back===1?"lo":"los"} habías borrado)`:""}, ${nn(rs.upd,"con jugadas que aquí no tienes","con jugadas que aquí no tienes")}, ${nn(rs.same,"igual","iguales")}${rs.newPl?` y ${nn(rs.newPl,"jugador nuevo","jugadores nuevos")}`:""}.${rs.byNum?` ${nn(rs.byNum,"jugador se une","jugadores se unen")} a tu plantilla por el dorsal.`:""}${rs.tbl?" También trae su tabla «Qué cierra cada jugada».":""} No se borra nada de lo que ya hay.${rs.clash&&rs.clash.length?`<br><span style="color:var(--mid);font-weight:600">Ojo, mismo dorsal y otro nombre: ${rs.clash.map(esc).join(" · ")}. Sus jugadas pasarán a tu jugador; si no es la misma persona, cambia el dorsal en el fichero de origen.</span>`:""}</span>
+      <div class="row"><button class="btn sm primary" data-act="restoredo" ${rs.add||rs.upd||rs.newPl||rs.tbl?"":"disabled"}>Restaurar</button><button class="btn sm" data-act="restorecancel">Cancelar</button></div></div>`
+    :`<div class="frow"><label class="f">Elige el fichero .json (copia o partido)<input type="file" id="restore-file" accept=".json,application/json"></label>
+      <label class="f">O pega aquí el texto de la copia<textarea id="restore-txt" rows="3" placeholder='{"app":"empat-data",…}'></textarea></label>
+      ${rs.err?`<span class="small" style="color:var(--bad)">${esc(rs.err)}</span>`:""}
+      <div class="row"><button class="btn sm" data-act="restoretxt">Leer el texto</button><button class="btn sm" data-act="restorecancel">Cancelar</button></div></div>`}
+  return`<div class="zone"><p class="hand">Copia de seguridad y partidos recibidos</p>
+    <p class="muted small" style="margin:0">Los datos viven en este dispositivo${col?" y en tu cuenta":""}. Descarga una copia de vez en cuando (${nn(n,"partido","partidos")} y la plantilla en un fichero .json); si cambias de móvil o borras el navegador, la restauras aquí. Aquí también se abre un partido que te manden (botón «Enviar» en Partidos): sus jugadores se unen a los tuyos por el dorsal. ${when?`Última copia: ${when}.`:"Aún no has descargado ninguna."}</p>${body}</div>`}
+
+/* ---------- Acciones ---------- */
+function go(v){ui.view=v;ui.sheet=null;ui.confirmDel=null;render();window.scrollTo(0,0)}
+function teamChanged(){S.team.updatedAt=Date.now();markDirty("team");saveLocal()}
+let wake=null;async function keepAwake(){try{if(!wake&&navigator.wakeLock){wake=await navigator.wakeLock.request("screen");wake.addEventListener("release",()=>{wake=null})}}catch(e){}}
+function vibrate(){try{if(navigator.vibrate)navigator.vibrate(18)}catch(e){}}
+function reportAmend(res,si){toast(amendMsg(res,si,"Corregido"))}
+
+document.addEventListener("click",async ev=>{
+  const t=ev.target.closest("[data-act],[data-go]");if(!t)return;
+  if(t.id==="sheet"&&ev.target!==t)return;
+  if(t.dataset.go){go(t.dataset.go);return}
+  const a=t.dataset.act,m=S.matches[ui.liveId];
+  switch(a){
+    case"example":{S.matches.ejemplo=makeExample();saveLocal();ui.liveId="ejemplo";go("live");break}
+    case"new":{const lastM=sortedMatches().find(x=>!x.example);ui.newForm={rival:"",date:today(),comp:"",bestOf:5,pts:25,tie:15,first:"us",detail:lastM&&isQuick(lastM)?"rapido":"full",roster:S.team.players.map(p=>p.id)};go("new");break}
+    case"nf-first":{readNewForm();ui.newForm.first=t.dataset.v;render();break}
+    case"nf-detail":{readNewForm();ui.newForm.detail=t.dataset.v;render();break}
+    case"nf-zones":{readNewForm();ui.newForm.zones=t.dataset.v==="1";render();break}
+    case"zones":{if(!m)break;if(m.zones)delete m.zones;else m.zones=true;m.metaAt=Date.now();ui.qz=null;touch(m);render();toast(m.zones?"Zonas: toca hacia dónde va cada saque o ataque (opcional)":"Zonas desactivadas en este partido");break}
+    case"zp":{const k=t.dataset.k,v=+t.dataset.v;const tg=k==="qz"?ui:ui.sheet;if(!tg)break;tg[k]=tg[k]===v?null:v;
+      document.querySelectorAll(`[data-act=zp][data-k=${k}]`).forEach(b=>b.setAttribute("aria-pressed",String(+b.dataset.v===tg[k])));break}
+    case"mapk":{ui.mapK=t.dataset.v;render();break}
+    case"statscomp":{ui.statsComp=t.dataset.v||null;render();break}
+    case"medit":{ui.medit=ui.medit===t.dataset.id?null:t.dataset.id;render();break}
+    case"meditsave":{const mm=S.matches[t.dataset.id];if(!mm)break;const g=s=>($("#"+s)||{}).value;const rv=(g("me-rival")||"").trim();if(!rv){toast("Escribe el nombre del rival");break}
+      const dt=g("me-date")||"";if(!/^\d{4}-\d{2}-\d{2}$/.test(dt)){toast("Pon la fecha del partido");break}
+      mm.rival=rv;mm.date=dt;mm.metaAt=Date.now();mm.comp=(g("me-comp")||"").trim();if(($("#me-ns")||{}).checked)mm.noSeason=true;else delete mm.noSeason;touch(mm);ui.medit=null;render();toast("Datos del partido guardados");break}
+    case"print":{showPrint();break}
+    case"livestart":{if(!m)break;await liveStart(m);break}
+    case"livestop":{await liveStop();break}
+    case"livecopy":{const c=shareCode();try{await navigator.clipboard.writeText(c);toast("Código copiado: pásalo por el grupo")}catch(e){const i=$("#share-code");if(i){i.focus();i.select()}toast("Selecciona el código y cópialo")}break}
+    case"folgo":{const c=($("#fol-code")||{}).value||"";await follow(c);break}
+    case"folstop":{unfollow();render();break}
+    case"printclose":{if(ev.target!==t&&!t.matches("button"))break;closeBox("printbox");break}
+    case"printgo":{const f=document.querySelector("#printbox iframe");try{f.contentWindow.focus();f.contentWindow.print()}catch(e){toast("Aquí no se puede imprimir: descarga la hoja")}break}
+    case"printdl":{await saveFile(t.dataset.name,printHTML(!!($("#print-pl")||{}).checked),"Hoja guardada: ábrela e imprímela o guárdala como PDF");break}
+    case"detail":{if(!m)break;if(isQuick(m))delete m.detail;else m.detail="rapido";m.metaAt=Date.now();touch(m);render();toast(isQuick(m)?"Modo rápido: solo lo que cierra el rally":"Modo completo: cada toque");break}
+    case"create":{readNewForm();const f=ui.newForm;if(!f.rival.trim()){toast("Escribe el nombre del rival");$("#nf-rival").focus();break}
+      if(!f.roster.length){toast("Marca al menos un convocado");break}
+      const id=newId();const mm={id,v:2,rival:f.rival.trim(),date:f.date||today(),comp:f.comp.trim(),bestOf:+f.bestOf,pts:+f.pts||25,tie:+f.tie||15,maxSubs:6,
+        table:clone(S.team.table||DEFAULT_TABLE),players:clone(S.team.players),roster:f.roster.slice(),sets:[{first:f.first,lineup:null,log:[]}],status:"live",updatedAt:Date.now()};
+      if(f.detail==="rapido")mm.detail="rapido";
+      if(f.zones)mm.zones=true;
+      S.matches[id]=mm;touch(mm);ui.liveId=id;ui.logOpen=false;openLineup(mm,0);keepAwake();break}
+    case"player":{if(!m)break;ui.ret=t.dataset.id||"";ui.sheet={mode:"new",p:t.dataset.id||null};renderSheet();keepAwake();break}
+    case"fault":{if(!m)break;ui.sheet={mode:"fault",p:null};renderSheet();break}
+    case"gap":{if(!m)break;const r0=replay(m);ui.sheet={mode:"gap",us:r0.cur.us,them:r0.cur.them,sv:r0.serving,p1:null};renderSheet();break}
+    case"gapstep":{const sh=ui.sheet;if(!m||!sh||sh.mode!=="gap")break;const st=replay(m).cur,k=t.dataset.k;sh[k]=Math.max(st[k],sh[k]+(+t.dataset.d));
+      /* si solo ha sumado un equipo, ese ganó el último punto y saca (salvo que ya se haya elegido a mano) */
+      if(!sh.svSet){const du=sh.us>st.us,dt=sh.them>st.them;if(du&&!dt)sh.sv="us";else if(dt&&!du)sh.sv="them";else if(!du&&!dt)sh.sv=replay(m).serving}renderSheet();break}
+    case"gapsv":{if(!ui.sheet)break;ui.sheet.sv=t.dataset.v;ui.sheet.svSet=true;renderSheet();break}
+    case"gapp1":{if(!ui.sheet)break;ui.sheet.p1=t.dataset.id||null;renderSheet();break}
+    case"gapdo":{const sh=ui.sheet;if(!m||!sh||sh.mode!=="gap")break;const ev={f:"GAP",us:sh.us,them:sh.them,sv:sh.sv};if(sh.p1)ev.p1=sh.p1;ui.sheet=null;
+      const e=addEvent(m,ev);render();if(e)toast(`Marcador ${sh.us}-${sh.them}. Sigue apuntando desde aquí`);break}
+    case"close":{ui.sheet=null;renderSheet();break}
+    case"pickp":{if(!ui.sheet)break;ui.sheet.p=t.dataset.id||null;renderSheet();break}
+    case"log":{if(!m||!ui.sheet)break;const sh=ui.sheet,f=t.dataset.f,rr=t.dataset.r;
+      const zx=f==="S"?{z:sh.zS||null,zo:null}:f==="A"?{z:sh.zA||null,zo:sh.zo||null}:{z:null,zo:null};
+      if(sh.mode==="edit"){const res=amend(m,sh.si,{k:"edit",ref:sh.ref,set:Object.assign({f,r:rr,p:sh.p||null},m.zones||(sh.prev&&sh.prev.f!==f)?zx:{})});ui.sheet=null;render();reportAmend(res,sh.si);break}
+      const nev={p:sh.p||null,f,r:rr};if(zx.z)nev.z=zx.z;if(zx.zo)nev.zo=zx.zo;
+      const e=addEvent(m,nev);ui.sheet=null;render();if(!e)break;vibrate();
+      const c=replay(m).ctx[e.id];if(c&&c.win)toast((c.win==="us"?"Punto nuestro":"Punto rival")+" · "+FUND[f].n+" "+optLabel(f,rr).toLowerCase());break}
+    case"edit":{if(!m)break;const si=+t.dataset.si;const e=effective(m.sets[si]).find(x=>x.id===t.dataset.ref);if(!e)break;
+      ui.sheet=ACT.includes(e.f)?{mode:"edit",ref:e.id,si,p:e.p||null,prev:{f:e.f,r:e.r},zS:e.f==="S"&&e.z||null,zA:e.f==="A"&&e.z||null,zo:e.f==="A"&&e.zo||null}:{mode:"teamedit",ref:e.id,si};renderSheet();break}
+    case"teamfix":{if(!m||!ui.sheet)break;const sh=ui.sheet,f=t.dataset.f;const patch=f==="X"?{f:"X",r:"o",p:null}:{f,r:f==="RE"?"=":"#"};
+      const res=amend(m,sh.si,{k:"edit",ref:sh.ref,set:patch});ui.sheet=null;render();reportAmend(res,sh.si);break}
+    case"delev":{if(!m||!ui.sheet)break;const sh=ui.sheet;const res=amend(m,sh.si,{k:"del",ref:sh.ref});ui.sheet=null;render();
+      toast(amendMsg(res,sh.si,"Jugada borrada"),{act:"undo",label:"Deshacer"});break}
+    case"team":{if(!m)break;const f=t.dataset.f;addEvent(m,{p:null,f,r:f==="RE"?"=":"#"});render();vibrate();keepAwake();break}
+    case"to":{if(!m)break;addEvent(m,{p:null,f:"T",side:t.dataset.side});render();break}
+    case"undo":{if(!m)break;const res=undoStep(m);render();if(res&&res.reopen){ui.sheet=res.reopen;renderSheet()}if(res)toast(res.msg);break}
+    case"showlog":{const si=+t.dataset.si;if(ui.logOpen&&ui.logSet===si&&t.closest(".zone")&&!t.closest(".note"))ui.logOpen=false;else{ui.logOpen=true;ui.logSet=si}render();
+      if(ui.logOpen){const z=$(".otab");if(z)z.scrollIntoView({block:"start",behavior:"smooth"})}break}
+    case"logset":{ui.logSet=+t.dataset.v;render();break}
+    case"startset":{if(!m)break;startSet(m,t.dataset.first);render();break}
+    case"qserve":{if(!m)break;const r0=replay(m);const sv=r0.cur.rot&&r0.cur.rot[0];if(!sv)break;const qe={p:sv,f:"S",r:t.dataset.r};if(m.zones&&ui.qz)qe.z=ui.qz;ui.qz=null;const e=addEvent(m,qe);render();if(!e)break;vibrate();
+      const c=replay(m).ctx[e.id];if(c&&c.win)toast((c.win==="us"?"Punto nuestro":"Punto rival")+" · Saque "+optLabel("S",t.dataset.r).toLowerCase());break}
+    case"sub":{if(!m)break;ui.sheet={mode:"sub",out:null,in:t.dataset.in||null};renderSheet();break}
+    case"subpick":{if(!ui.sheet)break;ui.sheet[t.dataset.k]=ui.sheet[t.dataset.k]===t.dataset.id?null:t.dataset.id;renderSheet();break}
+    case"subdo":{if(!m||!ui.sheet||!ui.sheet.out||!ui.sheet.in)break;const P=pmap(m);const e=addEvent(m,{f:"SUB",pout:ui.sheet.out,pin:ui.sheet.in});ui.sheet=null;render();
+      if(e){const w=replay(m).issues.filter(x=>x.evId===e.id);toast(w.length?"Cambio hecho, con aviso: "+w[0].msg:"Cambio: entra "+pname(P,e.pin))}break}
+    case"libswap":{if(!m)break;const st=replay(m).cur;const other=st.libs.find(x=>x!==st.lib);if(!other)break;addEvent(m,{f:"LIB",p:other});render();toast("Entra el líbero "+pname(pmap(m),other));break}
+    case"lineup":{if(!m)break;openLineup(m,t.dataset.si==="new"?"new":+t.dataset.si);break}
+    case"lufirst":{if(!ui.lu)break;ui.lu.first=t.dataset.v;render();break}
+    case"lulib":{if(!ui.lu)break;const id=t.dataset.id,L=ui.lu.libs;if(L.includes(id))ui.lu.libs=L.filter(x=>x!==id);else if(L.length>=2)toast("Como mucho 2 líberos");else L.push(id);render();break}
+    case"lupropose":{if(!m||!ui.lu)break;const pr=proposeLineup(m);Object.assign(ui.lu,{p:pr.p,setter:pr.setter,libs:pr.libs});render();break}
+    case"lucancel":{ui.lu=null;go("live");break}
+    case"lusave":case"lunone":{if(!m||!ui.lu)break;const lu=ui.lu;let lineup=null;
+      if(a==="lusave"){const six=lu.p.filter(Boolean);
+        if(six.length!==new Set(six).size){toast("Hay un jugador en dos posiciones");break}
+        if(six.length<6){toast("Faltan jugadores en pista. Si no quieres rotaciones, pulsa «Sin rotaciones»");break}
+        const P=pmap(m);lineup={p:lu.p.slice(),setter:six.includes(lu.setter)?lu.setter:(six.find(id=>(P[id]||{}).pos==="COL")||null),libs:lu.libs.filter(id=>!six.includes(id)).slice(0,2)}}
+      if(lu.si==="new"){const r0=replay(m);if(!r0.cur.done||r0.finished){ui.lu=null;go("live");break}m.sets.push({first:lu.first,lineup,log:[],t:Date.now()})}
+      else{const set=m.sets[lu.si];if(!set){ui.lu=null;go("live");break}set.lineup=lineup;set.first=lu.first}
+      touch(m);ui.lu=null;go("live");toast(lineup?"Alineación guardada":"Set sin rotaciones");break}
+    case"tostats":{ui.statsId=t.dataset.id;ui.statsSet="all";go("stats");break}
+    case"open":{ui.qz=null;ui.liveId=t.dataset.id;ui.logOpen=false;go("live");break}
+    case"statsset":{ui.statsSet=t.dataset.v;render();break}
+    case"delask":{ui.confirmDel=t.dataset.id;render();break}
+    case"delno":{ui.confirmDel=null;render();break}
+    case"del":{const id=t.dataset.id;const mm=S.matches[id];if(!mm)break;delete S.matches[id];
+      if(ui.undel){clearTimeout(ui.undel.timer);ui.undel.commit()}
+      /* el borrado no se sube a la cuenta hasta que pasa el plazo para deshacer */
+      const commit=()=>{if(!mm.example&&!S.matches[id]){S.deleted[id]=Date.now();markDirty("m_"+id);saveLocal()}};
+      ui.undel={m:mm,commit,timer:setTimeout(()=>{if(ui.undel&&ui.undel.m===mm){ui.undel=null;commit()}},8000)};
+      saveLocal();if(ui.liveId===id)pickLive();if(ui.statsId===id)ui.statsId=null;ui.confirmDel=null;render();toast("Partido borrado",{act:"undel",label:"Deshacer"},8000);break}
+    case"rmp":{if(ui.confirmRmp!==t.dataset.id){ui.confirmRmp=t.dataset.id;render();break}ui.confirmRmp=null;S.team.players=S.team.players.filter(p=>p.id!==t.dataset.id);teamChanged();render();toast("Jugador quitado de la plantilla. Sus partidos no cambian");break}
+    case"bulkcheck":{const txt=($("#bulk-txt")||{}).value||"";const r=parseRoster(txt);const have={};S.team.players.forEach(p=>have[p.num]=p);
+      const nNew=r.ok.filter(x=>!have[x.num]).length,nUpd=r.ok.length-nNew;
+      ui.bulk={txt,ok:r.ok.length?r.ok:null,prev:r.ok.length||r.bad.length?`${nNew} nuevos, ${nUpd} ya estaban (se actualizan)${r.bad.length?`<br><span style="color:var(--bad)">No se entiende: ${r.bad.map(esc).join(" · ")}</span>`:""}`:"No hay nada que añadir"};render();break}
+    case"bulkdo":{const b=ui.bulk;if(!b||!b.ok)break;b.ok.forEach(x=>{const p=S.team.players.find(q=>+q.num===x.num);if(p){p.name=x.name;if(x.pos)p.pos=x.pos}else S.team.players.push({id:newId(),num:x.num,name:x.name,pos:x.pos||"REC"})});
+      teamChanged();const n=b.ok.length;ui.bulk=null;render();toast(n+" jugadores en la plantilla");break}
+    case"bulkcopy":{const txt=S.team.players.slice().sort((a,b)=>a.num-b.num).map(p=>p.num+" "+p.name+" "+p.pos).join("\n");try{await navigator.clipboard.writeText(txt);toast("Plantilla copiada")}catch(e){showCopyBox(txt)}break}
+    case"rmpno":{ui.confirmRmp=null;render();break}
+    case"vplay":{const v=vEl();if(v){vid.hold=false;v.paused?v.play().catch(()=>{}):v.pause()}break}
+    case"vskip":{const v=vEl();if(v)v.currentTime=Math.max(0,v.currentTime+(+t.dataset.d));break}
+    case"vrate":{const v=vEl();if(!v)break;const R=[1,0.5,0.75,1.5,2];const nx=R[(R.indexOf(v.playbackRate)+1)%R.length]||1;v.playbackRate=nx;t.textContent=nx+"×";break}
+    case"vclose":{vidClose();break}
+    case"seek":{const v=vEl();if(!v)break;vid.hold=false;v.currentTime=Math.max(0,+t.dataset.t-4);v.play().catch(()=>{});window.scrollTo({top:0,behavior:"smooth"});break}
+    case"sendm":{const mm=S.matches[t.dataset.id];if(!mm)break;await saveFile(`empat-partido-${mm.date||"sin-fecha"}-${slug(mm.rival)||"rival"}.json`,matchFileText(mm),"Partido guardado: mándaselo a quien quieras");break}
+    case"img":{showImage();break}
+    case"imgclose":{if(ev.target!==t&&!t.matches("button"))break;closeBox("imgbox");break}
+    case"imgsave":{const el=document.getElementById("imgbox");if(!el)break;const b=await cvBlob(el._cv);let dl=null;try{dl=window.claude&&window.claude.use?await window.claude.use("downloads"):null}catch(e){}
+      if(!dl){toast(browserSave(t.dataset.name,b)?"Imagen descargada. Si no la ves, mantén pulsada la imagen":"Aquí no se puede descargar: mantén pulsada la imagen");break}try{await dl.save({filename:t.dataset.name,data:b});toast("Imagen guardada")}catch(e){if(e&&e.code!=="declined")toast("No se pudo guardar la imagen")}break}
+    case"imgshare":{const el=document.getElementById("imgbox");if(!el)break;try{const b=await cvBlob(el._cv);const f=new File([b],t.dataset.name,{type:"image/png"});
+      if(navigator.canShare&&navigator.canShare({files:[f]}))await navigator.share({files:[f]});else toast("Este navegador no deja compartir: descárgala")}catch(e){if(e&&e.name!=="AbortError")toast("No se pudo compartir: descárgala")}break}
+    case"backup":{const ok=await saveFile("empat-copia-"+today()+".json",backupText(),"Copia guardada");if(ok)try{localStorage.setItem(BK_KEY,String(Date.now()))}catch(e){}if(ok&&ui.view==="team"&&!$("#copybox"))render();break}
+    case"restoreopen":{ui.restore={open:true};render();break}
+    case"restorecancel":{ui.restore=null;render();break}
+    case"restoretxt":{const v=($("#restore-txt")||{}).value||"";ui.restore=Object.assign({open:true},parseBackup(v));render();break}
+    case"restoredo":{const rs=ui.restore;if(!rs||!rs.d)break;applyBackup(rs);ui.restore=null;render();toast("Copia restaurada");break}
+    case"undel":{const u=ui.undel;if(!u)break;clearTimeout(u.timer);ui.undel=null;S.matches[u.m.id]=u.m;delete S.deleted[u.m.id];saveLocal();ui.toast=null;renderToast();render();toast("Partido recuperado");break}
+    case"copyex":{S.team.players=S.matches.ejemplo.players.map(p=>({id:newId(),num:p.num,name:p.name,pos:p.pos}));if(S.team.name==="Mi equipo")S.team.name="CV Ejemplo";teamChanged();render();break}
+    case"tablereset":{S.team.table=clone(DEFAULT_TABLE);teamChanged();render();toast("Tabla por defecto");break}
+    case"copy":{const txt=summaryText();try{await navigator.clipboard.writeText(txt);toast("Resumen copiado")}catch(e){showCopyBox(txt)}break}
+    case"csv":{const txt=csvText();const sm=S.matches[ui.statsId];const name="empat-"+(ui.statsId==="season"?"temporada"+(compLabel()?"-"+slug(compLabel()):""):(sm.date||"sin-fecha")+"-"+(slug(sm.rival)||"rival")+(ui.statsSet!=="all"?"-set"+(+ui.statsSet+1):""))+".csv";
+      await saveFile(name,txt,"CSV guardado");break}
+  }
+});
+function showCopyBox(txt){const app=$("#app");const box=document.createElement("div");box.className="sheetcard";box.innerHTML=`<p class="hand">Copia este texto</p><textarea id="copybox" rows="8" style="font:13px/1.4 ui-monospace,monospace"></textarea>`;app.appendChild(box);const ta=box.querySelector("textarea");ta.value=txt;ta.focus();ta.select()}
+function readNewForm(){const f=ui.newForm;if(!$("#nf-rival"))return;f.rival=$("#nf-rival").value;f.date=$("#nf-date").value;f.comp=$("#nf-comp").value;f.bestOf=+$("#nf-bo").value;f.pts=+$("#nf-pts").value;f.tie=+$("#nf-tie").value;
+  f.roster=[...document.querySelectorAll(".nf-p")].filter(c=>c.checked).map(c=>c.value)}
+document.addEventListener("change",ev=>{
+  const t=ev.target;
+  if(t.id==="restore-file"&&t.files&&t.files[0]){const fr=new FileReader();fr.onload=()=>{ui.restore=Object.assign({open:true},parseBackup(String(fr.result)));render()};fr.onerror=()=>{ui.restore={open:true,err:"No se pudo leer el fichero"};render()};fr.readAsText(t.files[0]);return}
+  if(t.id==="vid-file"&&t.files&&t.files[0]){const m=S.matches[ui.liveId];if(m)vidLoad(t.files[0],m);return}
+  if(t.id==="vauto"){vid.auto=t.checked;return}
+  if(t.id==="stats-sel"){ui.statsId=t.value;ui.statsSet="all";render();return}
+  if(t.id==="map-sel"){ui.mapP=t.value;render();return}
+  if(t.id==="share-names"&&share){share.names=t.checked;shareSave();render();livePush(true);return}
+  if(t.id==="evo-sel"){ui.evoP=t.value;render();return}
+  if(t.id==="print-pl"){const f=document.querySelector("#printbox iframe");if(f)f.srcdoc=printHTML(t.checked);return}
+  if(t.id==="bigtxt"){try{localStorage.setItem(LS_KEY+"-letra",t.checked?"grande":"normal")}catch(e){}applyBig();return}
+  if(t.id==="team-name"){S.team.name=t.value.trim()||"Mi equipo";teamChanged();render();return}
+  if(t.dataset.lu&&ui.lu){if(t.dataset.lu==="p"){ui.lu.p[+t.dataset.i]=t.value||null}else ui.lu.setter=t.value||null;render();return}
+  if(t.dataset.otab){const f=t.dataset.otab,r=t.dataset.r;if(!S.team.table)S.team.table=clone(DEFAULT_TABLE);if(!S.team.table[f])S.team.table[f]={};
+    if(t.value)S.team.table[f][r]=t.value;else delete S.team.table[f][r];teamChanged();return}
+  const row=t.closest(".prow[data-pid]");if(row){const p=S.team.players.find(x=>x.id===row.dataset.pid);if(!p)return;const fld=t.dataset.field;
+    p[fld]=fld==="num"?(+t.value||0):t.value;teamChanged();return}
+});
+document.addEventListener("submit",ev=>{ev.preventDefault();
+  if(ev.target.id==="addp"){const num=$("#np-num").value,name=$("#np-name").value.trim();if(num===""||!name)return;
+    if(S.team.players.some(p=>p.num===+num)){toast("Ya hay un jugador con el dorsal "+num);return}
+    S.team.players.push({id:newId(),num:+num,name,pos:$("#np-pos").value});teamChanged();render();setTimeout(()=>{const n=$("#np-num");if(n)n.focus()},0)}
+});
+document.addEventListener("keydown",ev=>{
+  /* El Tab no se escapa del panel de jugada ni de los diálogos */
+  if(ev.key==="Tab"){const box=document.querySelector("#sheet .sheet,#imgbox .card,#printbox .card");if(box){const f=[...box.querySelectorAll("button:not([disabled]),input,select,textarea,iframe")];
+    if(f.length){const a=document.activeElement,i=f.indexOf(a);if(i<0){ev.preventDefault();f[0].focus()}else if(ev.shiftKey&&i===0){ev.preventDefault();f[f.length-1].focus()}else if(!ev.shiftKey&&i===f.length-1){ev.preventDefault();f[0].focus()}}}}
+  if(ev.key==="Escape"&&ui.sheet){ui.sheet=null;renderSheet();return}
+  if(ev.key==="Escape"&&document.getElementById("imgbox")){closeBox("imgbox");return}
+  if(ev.key==="Escape"&&document.getElementById("printbox")){closeBox("printbox");return}
+  const v=vEl();if(!v||!vidOn()||ui.sheet||/INPUT|TEXTAREA|SELECT/.test((ev.target||{}).tagName||""))return;
+  if(ev.key==="k"||ev.key==="K"){ev.preventDefault();vid.hold=false;v.paused?v.play().catch(()=>{}):v.pause()}
+  else if(ev.key==="ArrowLeft"){ev.preventDefault();v.currentTime=Math.max(0,v.currentTime-3)}else if(ev.key==="ArrowRight"){ev.preventDefault();v.currentTime+=3}});
+setInterval(()=>{const el=document.getElementById("fol-ago");if(el&&fol.at){const a=Math.max(0,Math.round((Date.now()-fol.at)/1000));el.textContent=`Actualizado hace ${a<60?a+" s":Math.round(a/60)+" min"}. Solo lectura.`}},5000);
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState!=="visible")return;if(fol.code&&fol.err==="net")follow(fol.code);if(ui.view==="live"&&wake===null&&ui.liveId)keepAwake();reconnect()});
+window.addEventListener("online",reconnect);
+
+/* ---------- Arranque ---------- */
+applyBig();
+const had=loadLocal();
+if(S.matches.ejemplo&&S.matches.ejemplo.exV!==makeExample.V){S.matches.ejemplo=makeExample();saveLocal()}
+if(!had&&!Object.keys(S.matches).length){S.matches.ejemplo=makeExample();saveLocal()}
+pickLive();
+if(!ui.liveId&&S.matches.ejemplo&&S.matches.ejemplo.status==="live")ui.liveId="ejemplo";
+render();
+connect();
+window.__empat={get share(){return share},liveSnapshot,seal,unseal,get S(){return S},replay,effective,normalizeMatch,mergeMatch,parseBackup,backupText,matchFileText,applyBackup,statsImage,computeStats,gather,printHTML,compKey,seasonMatches,get ui(){return ui}};
+})();
+</script>
+
+</body>
+</html>
