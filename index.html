@@ -12,7 +12,6 @@
 </head>
 <body>
 <title>emPat Data</title>
-<meta name="claude:viewport-fit-sides" content="cover">
 <style>
 /* Layout: app nativa de móvil — listas agrupadas en tarjetas blancas sobre gris, marcador grande arriba, botones grandes y redondeados, barra de pestañas abajo */
 :root{
@@ -626,13 +625,9 @@ async function flush(){if(!col||flushing)return;flushing=true;let failed=false;
     try{await col.doc(k).set(body)}catch(e){dirty.add(k);failed=true;setSync(e&&e.code==="unavailable"?"offline":"error");break}}}
   finally{flushing=false}
   if(dirty.size){clearTimeout(flushT);flushT=setTimeout(flush,failed?10000:1200)}else setSync("cloud")}
-const hasClaude=()=>!!(window.claude&&typeof window.claude.use==="function");
-/* De dónde se sincroniza: dentro de claude.ai, su base de datos; fuera (la web), la cuenta propia cifrada (Firebase) */
-async function dbSource(){
-  if(hasClaude()){const[d,u]=await Promise.all([window.claude.use("db"),window.claude.use("user")]);if(!d||!u)return null;
-    const id=await u.id();return id?{d,c:d.collection("data/users/"+id)}:null}
-  if(!acc)return null;await fbToken();return{d:fbDb,c:fbCol}}
-async function myUid(){if(!hasClaude())return acc&&acc.uid||null;try{const u=await window.claude.use("user");return u&&await u.id()}catch(e){return null}}
+/* Se sincroniza con la cuenta propia cifrada (Firebase), si se ha entrado */
+async function dbSource(){if(!acc)return null;await fbToken();return{d:fbDb,c:fbCol}}
+const myUid=()=>acc&&acc.uid||null;
 async function connect(){
   try{const src=await dbSource();if(!src)return;const d=src.d,c=src.c;
     const snap=await c.limit(1000).get();const remote={};snap.docs.forEach(doc=>{remote[doc.id]=doc.data()});
@@ -654,7 +649,7 @@ async function connect(){
 /* Si al arrancar no había red, se vuelve a intentar al recuperarla o al volver a la pestaña */
 function reconnect(){if(!col&&!connect.busy){connect.busy=true;connect().finally(()=>{connect.busy=false})}else if(col&&dirty.size)flush()}
 
-/* ---------- Cuenta propia (la web, fuera de claude.ai) ----------
+/* ---------- Cuenta propia ----------
    Firebase (proyecto empat-data-9d079, Firestore en Europa) por su API REST, sin librerías externas y sin analítica.
    Solo se pide usuario y contraseña. De la contraseña salen dos claves con PBKDF2: una para entrar (Firebase nunca ve la contraseña)
    y otra para cifrar con AES-GCM en el dispositivo todo lo que se sube. Si se olvida la contraseña no hay forma de leer la cuenta: quedan este dispositivo y las copias .json. */
@@ -694,7 +689,7 @@ async function sealDoc(k,body){const iv=crypto.getRandomValues(new Uint8Array(12
   return{kind:body.kind,iv:b64u.enc(iv),ct:b64u.enc(new Uint8Array(ct)),updatedAt:Math.round(+body.updatedAt||0),deleted:body.deleted?true:undefined}}
 async function openDoc(k,f){const pt=await crypto.subtle.decrypt({name:"AES-GCM",iv:b64u.dec(f.iv),additionalData:new TextEncoder().encode(acc.uid+"/"+k)},await aesKey(b64u.dec(acc.ek),"decrypt"),b64u.dec(f.ct));
   return{kind:f.kind,data:JSON.parse(new TextDecoder().decode(pt)).data,updatedAt:+f.updatedAt||0,deleted:!!f.deleted}}
-/* Misma forma que la base de datos de claude.ai, para que connect(), flush() y el directo no cambien */
+/* Interfaz mínima que usan connect(), flush() y el directo */
 const fbCol={doc:k=>({set:async body=>{await fsReq("PATCH","users/"+acc.uid+"/docs/"+k,fsEnc(await sealDoc(k,body)))}}),
   limit:()=>({get:async()=>{const docs=[];let pt="";
     do{const j=await fsReq("GET","users/"+acc.uid+"/docs?pageSize=300"+(pt?"&pageToken="+encodeURIComponent(pt):""));
@@ -727,7 +722,7 @@ const ACC_MSG={user:"El nombre de usuario va de 3 a 30 letras sin tildes, númer
   EMAIL_EXISTS:"Ese nombre de usuario ya está cogido. Prueba otro.",INVALID_LOGIN_CREDENTIALS:"Usuario o contraseña incorrectos.",EMAIL_NOT_FOUND:"Usuario o contraseña incorrectos.",INVALID_PASSWORD:"Usuario o contraseña incorrectos.",
   TOO_MANY_ATTEMPTS_TRY_LATER:"Demasiados intentos seguidos. Espera unos minutos.",USER_DISABLED:"Esta cuenta está desactivada.",unavailable:"Sin conexión. Inténtalo cuando tengas internet.",
   same:"Las dos contraseñas no coinciden.",sure:"Marca la casilla para confirmar que has apuntado la contraseña."};
-function accZone(){if(hasClaude())return"";const a=ui.acc||{},busy=a.busy?"disabled":"";
+function accZone(){const a=ui.acc||{},busy=a.busy?"disabled":"";
   const err=a.err?`<p class="small" role="alert" style="margin:0;color:var(--bad)">${esc(ACC_MSG[a.err]||"No se ha podido. Inténtalo otra vez.")}</p>`:"";
   if(acc){const ask=a.ask;
     return`<div class="zone" id="acczone"><p class="hand">Tu cuenta</p>
@@ -818,20 +813,20 @@ function livePush(now){if(!share)return;clearTimeout(shareT);if(!now){shareT=set
   (async()=>{const m=S.matches[share.mid];if(!m||!db){shareErr=db?"gone":"nodb";paintShare();return}
     try{const body=await seal(liveSnapshot(m),share.key);await db.doc("live/"+share.uid).set({v:1,iv:body.iv,ct:body.ct,exp:Date.now()+LIVE_H*3600e3,t:Date.now()});shareErr=null;shareAt=Date.now()}
     catch(e){shareErr=e&&(e.code==="invalid_argument"||e.code==="permission_denied")?"ro":"net"}paintShare()})()}
-const NEED_ACC=()=>hasClaude()?"abre emPat Data en claude.ai con la sesión iniciada":"entra en tu cuenta (pestaña Equipo)";
+const NEED_ACC=()=>"entra en tu cuenta (pestaña Equipo)";
 async function liveStart(m){if(!db){toast("Para compartir en directo, "+NEED_ACC());return}
-  const uid=await myUid();if(!uid){toast("No se pudo saber quién eres: "+NEED_ACC());return}
+  const uid=myUid();if(!uid){toast("No se pudo saber quién eres: "+NEED_ACC());return}
   if(share&&share.uid!==uid)await liveStop(true);
   share={mid:m.id,uid:sid(uid),key:b64u.enc(crypto.getRandomValues(new Uint8Array(16))),names:false,since:Date.now()};shareSave();shareErr=null;render();livePush(true)}
 async function liveStop(quiet){const x=share;share=null;shareSave();clearTimeout(shareT);if(db&&x)try{await db.doc("live/"+x.uid).delete()}catch(e){}if(!quiet){render();toast("Directo parado: el código ya no sirve")}}
 function paintShare(){const el=document.getElementById("share-st");if(el)el.innerHTML=shareStatus()}
-function shareStatus(){if(shareErr==="ro")return`<span style="color:var(--bad)">Tu acceso a esta app es de solo lectura y no se puede publicar el directo. Pide a quien te la pasó acceso de colaborador.</span>`;
+function shareStatus(){if(shareErr==="ro")return`<span style="color:var(--bad)">El servidor no ha dejado publicar el directo. Sal de la cuenta y vuelve a entrar.</span>`;
   if(shareErr==="nodb")return`<span style="color:var(--bad)">Sin conexión con tu cuenta: ${NEED_ACC()}.</span>`;
   if(shareErr==="net")return`<span style="color:var(--mid)">No se pudo enviar la última jugada; se reintenta con la siguiente.</span>`;
   return shareAt?`Enviado a las ${new Date(shareAt).toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit",second:"2-digit"})}`:"Conectando…"}
 function shareZone(m){if(m.example)return"";const on=share&&share.mid===m.id;
   if(!on)return`<div class="zone"><div class="row spread"><p class="hand">Directo para el banquillo y las familias</p><button class="btn sm" data-act="livestart" ${db?"":"disabled"}>Compartir en directo</button></div>
-    <p class="muted small" style="margin:0">Quien tenga el código ve el marcador, las jugadas y las cifras en su móvil, sin poder cambiar nada. Salen los dorsales; los nombres de pila, solo si lo eliges. Lo puedes parar cuando quieras y caduca a las ${LIVE_H} horas.${db?"":hasClaude()?" Disponible al abrir emPat Data en claude.ai con la sesión iniciada.":" Para compartir, entra en tu cuenta en la pestaña Equipo. Para seguir un directo no hace falta cuenta."}${share&&share.mid!==m.id?" Ahora mismo compartes otro partido: al empezar este, aquel se para.":""}</p></div>`;
+    <p class="muted small" style="margin:0">Quien tenga el código ve el marcador, las jugadas y las cifras en su móvil, sin poder cambiar nada. Salen los dorsales; los nombres de pila, solo si lo eliges. Lo puedes parar cuando quieras y caduca a las ${LIVE_H} horas.${db?"":" Para compartir, entra en tu cuenta en la pestaña Equipo. Para seguir un directo no hace falta cuenta."}${share&&share.mid!==m.id?" Ahora mismo compartes otro partido: al empezar este, aquel se para.":""}</p></div>`;
   return`<div class="zone" style="box-shadow:inset 0 0 0 2px var(--good)"><div class="row spread"><p class="hand" style="color:var(--good)">● Compartiendo en directo</p><button class="btn sm danger" data-act="livestop">Dejar de compartir</button></div>
     <label class="f">Código para seguir el partido (pásalo por el grupo)<input type="text" id="share-code" readonly value="${esc(shareCode())}"></label>
     <div class="row"><button class="btn sm primary" data-act="livecopy">Copiar el código</button><label class="row small" style="gap:6px"><input type="checkbox" id="share-names" ${share.names?"checked":""}> Enseñar los nombres de pila</label></div>
@@ -845,8 +840,7 @@ async function follow(code){code=String(code||"").trim().replace(/\s+/g,"");cons
   fol={code,unsub:null,data:null,err:null,at:0};try{localStorage.setItem(LIVE_KEY+"-sigo",code)}catch(e){}
   const uid=sid(code.slice(0,i)),key=code.slice(i+1);
   if(i<1||!uid||!/^[A-Za-z0-9_-]{20,}$/.test(key)){fol.err="code";render();return}
-  let d=db;if(!d)try{d=hasClaude()?await window.claude.use("db"):fbDb}catch(e){}
-  if(!d){fol.err="nodb";render();return}
+  const d=fbDb;
   render();
   fol.unsub=d.doc("live/"+uid).onSnapshot(async snap=>{const x=snap.exists?snap.data():null;
     if(!x||!x.ct||(x.exp&&x.exp<Date.now())){fol.data=null;fol.err="ended";if(ui.view==="follow")render();return}
@@ -857,7 +851,7 @@ function viewFollow(){const d0=fol.data,N=x=>+x||0;const d=d0&&{...d0,cur:(d0.cu
   const form=`<div class="zone"><h2>Seguir un partido en directo</h2><p class="muted small" style="margin:0">Pega el código que te ha pasado el entrenador o quien apunta. Solo se puede mirar: nada de lo que hagas aquí cambia el partido.</p>
     <label class="f">Código<input type="text" id="fol-code" value="${esc(fol.code||last)}" placeholder="Pega aquí el código" autocomplete="off"></label>
     <div class="row"><button class="btn primary" data-act="folgo">Seguir</button>${fol.code?`<button class="btn" data-act="folstop">Dejar de seguir</button>`:""}<button class="btn" data-go="live">Volver</button></div></div>`;
-  const msg={code:"Ese código no es válido. Cópialo entero, con el punto del medio.",nodb:"Para seguir un directo abre emPat Data en claude.ai con tu sesión iniciada.",ended:"Este directo no existe o ya ha terminado.",key:"El código no coincide con este directo (quizá se paró y se empezó otro). Pide el código nuevo.",net:"Sin conexión. Se reintentará al volver a la pestaña."};
+  const msg={code:"Ese código no es válido. Cópialo entero, con el punto del medio.",ended:"Este directo no existe o ya ha terminado.",key:"El código no coincide con este directo (quizá se paró y se empezó otro). Pide el código nuevo.",net:"Sin conexión. Se reintentará al volver a la pestaña."};
   if(!fol.code)return form;
   if(!d)return form+`<div class="note${fol.err?" warn":""}"><p class="hand">${fol.err?esc(msg[fol.err]):"Conectando con el directo…"}</p></div>`;
   const ago=Math.max(0,Math.round((Date.now()-fol.at)/1000));
@@ -996,10 +990,8 @@ function applyBackup(rs){const d=rs.d;
   if(S.team.name==="Mi equipo"&&d.team.name)S.team.name=String(d.team.name);teamChanged();
   const cur=S.matches[ui.liveId];if(!cur||cur.status!=="live")pickLive()}
 function browserSave(name,blob){try{const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;a.rel="noopener";document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},4000);return true}catch(e){return false}}
-async function saveFile(name,txt,okMsg){let dl=null;try{dl=window.claude&&window.claude.use?await window.claude.use("downloads"):null}catch(e){}
-  /* Fuera de claude.ai (la demo en la web): descarga normal del navegador y, por si el navegador no deja (apps con navegador integrado), el texto para copiar */
-  if(!dl){const ok=browserSave(name,new Blob([txt],{type:/\.csv$/.test(name)?"text/csv":/\.html$/.test(name)?"text/html":"application/json"}));showCopyBox(txt);toast(ok?okMsg+". Si no ves el fichero, copia el texto":"No se puede descargar aquí: copia el texto");return ok}
-  try{await dl.save({filename:name,data:txt});toast(okMsg);return true}catch(e){if(e&&e.code!=="declined")toast("No se pudo guardar el fichero");return false}}
+/* Descarga normal del navegador y, por si el navegador no deja (apps con navegador integrado), el texto para copiar */
+async function saveFile(name,txt,okMsg){const ok=browserSave(name,new Blob([txt],{type:/\.csv$/.test(name)?"text/csv":/\.html$/.test(name)?"text/html":"application/json"}));showCopyBox(txt);toast(ok?okMsg+". Si no ves el fichero, copia el texto":"No se puede descargar aquí: copia el texto");return ok}
 
 /* ---------- Utilidades de vista ---------- */
 function sortedMatches(){return Object.values(S.matches).sort((a,b)=>(b.date||"").localeCompare(a.date||"")||(b.updatedAt-a.updatedAt))}
@@ -1611,8 +1603,8 @@ document.addEventListener("click",async ev=>{
     case"sendm":{const mm=S.matches[t.dataset.id];if(!mm)break;await saveFile(`empat-partido-${mm.date||"sin-fecha"}-${slug(mm.rival)||"rival"}.json`,matchFileText(mm),"Partido guardado: mándaselo a quien quieras");break}
     case"img":{showImage();break}
     case"imgclose":{if(ev.target!==t&&!t.matches("button"))break;closeBox("imgbox");break}
-    case"imgsave":{const el=document.getElementById("imgbox");if(!el)break;const b=await cvBlob(el._cv);let dl=null;try{dl=window.claude&&window.claude.use?await window.claude.use("downloads"):null}catch(e){}
-      if(!dl){toast(browserSave(t.dataset.name,b)?"Imagen descargada. Si no la ves, mantén pulsada la imagen":"Aquí no se puede descargar: mantén pulsada la imagen");break}try{await dl.save({filename:t.dataset.name,data:b});toast("Imagen guardada")}catch(e){if(e&&e.code!=="declined")toast("No se pudo guardar la imagen")}break}
+    case"imgsave":{const el=document.getElementById("imgbox");if(!el)break;const b=await cvBlob(el._cv);
+      toast(browserSave(t.dataset.name,b)?"Imagen descargada. Si no la ves, mantén pulsada la imagen":"Aquí no se puede descargar: mantén pulsada la imagen");break}
     case"imgshare":{const el=document.getElementById("imgbox");if(!el)break;try{const b=await cvBlob(el._cv);const f=new File([b],t.dataset.name,{type:"image/png"});
       if(navigator.canShare&&navigator.canShare({files:[f]}))await navigator.share({files:[f]});else toast("Este navegador no deja compartir: descárgala")}catch(e){if(e&&e.name!=="AbortError")toast("No se pudo compartir: descárgala")}break}
     case"backup":{const ok=await saveFile("empat-copia-"+today()+".json",backupText(),"Copia guardada");if(ok)try{localStorage.setItem(BK_KEY,String(Date.now()))}catch(e){}if(ok&&ui.view==="team"&&!$("#copybox"))render();break}
