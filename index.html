@@ -142,6 +142,8 @@ a.btn{display:inline-flex;align-items:center;text-decoration:none}
 .frow.hot .fn{color:var(--us)}
 .frow.hot .fn::after{content:" · lo más probable ahora";text-transform:none;letter-spacing:0;font-weight:500}
 .opts{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.opts.n7{grid-template-columns:repeat(4,1fr)}@media (min-width:600px){.opts.n7{grid-template-columns:repeat(7,1fr)}}
+.opt{text-align:center;overflow-wrap:anywhere}
 .opt{border:0;border-radius:10px;padding:6px 4px;min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:600;font-size:13px;line-height:1.2}
 .opt b{font-size:19px;font-weight:700;line-height:1.1}
 .opt small{font-weight:600;font-size:11px}
@@ -325,18 +327,22 @@ body:has(#sheet) .toast{bottom:auto;top:calc(12px + env(safe-area-inset-top,0px)
 /* ---------- Modelo ---------- */
 const POS={COL:"Colocador",OPU:"Opuesto",REC:"Receptor",CEN:"Central",LIB:"Líbero",UNI:"Universal"};
 /* Fundamentos y evaluaciones. Quién gana el rally lo dice la tabla de resultados (configurable), no esta lista. */
+/* Escala completa de DataVolley (6 símbolos, significado por fundamento; el "/" es bueno en el saque y malo en el resto) más "·" = acción apuntada sin valorar
+   (cuenta en el total, no en la calidad). Los partidos antiguos, con menos símbolos, se leen igual. */
+const NV=["·","Sin valorar"];
 const FUND={
-  S:{n:"Saque",o:[["#","Ace"],["+","Positivo"],["!","En juego"],["=","Error"]]},
-  R:{n:"Recepción",o:[["#","Perfecta"],["+","Positiva"],["-","Negativa"],["=","Error"]]},
-  A:{n:"Ataque",o:[["#","Punto"],["+","En juego"],["/","Bloqueado"],["=","Error"]]},
-  B:{n:"Bloqueo",o:[["#","Punto"],["+","Toque"],["=","Error"]]},
-  D:{n:"Defensa",o:[["#","Perfecta"],["+","Levantada"],["=","Error"]]},
-  E:{n:"Colocación",o:[["#","Perfecta"],["+","Buena"],["=","Error"]]},
+  S:{n:"Saque",o:[["#","Ace"],["+","Positivo"],["!","Sin 1er tiempo"],["-","Negativo"],["/","Devuelto sin ataque"],["=","Error"],NV]},
+  R:{n:"Recepción",o:[["#","Perfecta"],["+","Positiva"],["!","Sin 1er tiempo"],["-","Negativa"],["/","Pasa directa"],["=","Error"],NV]},
+  A:{n:"Ataque",o:[["#","Punto"],["+","Positivo"],["!","Bloq. y sigue"],["-","Fácil de defender"],["/","Bloqueado"],["=","Error"],NV]},
+  B:{n:"Bloqueo",o:[["#","Punto"],["+","Toque bueno"],["!","Toque"],["-","Toque malo"],["/","Invasión"],["=","Error"],NV]},
+  D:{n:"Defensa",o:[["#","Perfecta"],["+","Buena"],["!","Sin 1er tiempo"],["-","Sin ataque"],["/","Vuelve directa"],["=","Error"],NV]},
+  E:{n:"Colocación",o:[["#","Perfecta"],["+","Buena"],["!","Sin 1er tiempo"],["-","Mala"],["/","Pasa directa"],["=","Error"],NV]},
   X:{n:"Falta",o:[["r","Red / invasión"],["d","Dobles / retención"],["p","Pisada / rotación"],["o","Otra falta"]]}
 };
+const symTxt=r=>r==="·"?"•":r;
 const ACT="SRAEBDX";
 const BASE_ORDER=["S","R","A","B","D","E","X"];
-const DEFAULT_TABLE={S:{"#":"us","=":"them"},R:{"=":"them"},A:{"#":"us","/":"them","=":"them"},B:{"#":"us","=":"them"},D:{"=":"them"},E:{"=":"them"},X:{r:"them",d:"them",p:"them",o:"them"}};
+const DEFAULT_TABLE={S:{"#":"us","=":"them"},R:{"=":"them"},A:{"#":"us","/":"them","=":"them"},B:{"#":"us","/":"them","=":"them"},D:{"=":"them"},E:{"=":"them"},X:{r:"them",d:"them",p:"them",o:"them"}};
 const TEAMF={RE:"Error del rival",RP:"Punto del rival",T:"Tiempo muerto"};
 const LS_KEY="libreta-voley-v1";
 const $=s=>document.querySelector(s);
@@ -360,7 +366,7 @@ function cleanMatch(m){if(m.id!=null)m.id=sid(m.id);if(m.date!=null&&!/^\d{4}-\d
     ["z","zo"].forEach(k=>{if(o[k]!=null){const n=+o[k];if(n>=1&&n<=9&&Number.isInteger(n))o[k]=n;else o[k]=null}});if(o.r!=null)o.r=String(o.r).slice(0,2);if(o.f!=null)o.f=String(o.f).slice(0,4)};
   m.sets.forEach(st=>{if(st.lineup&&typeof st.lineup==="object"){st.lineup.p=(st.lineup.p||[]).map(sid);st.lineup.setter=sid(st.lineup.setter);st.lineup.libs=(st.lineup.libs||[]).map(sid)}
     st.log=st.log.filter(x=>x&&typeof x==="object");st.log.forEach(x=>{cz(x);if(x.k==="edit"&&x.set&&typeof x.set==="object")cz(x.set)})});return m}
-function rclass(f,r,T){const w=T&&T[f]&&T[f][r];if(f==="X"||w==="them")return"r-bad";if(w==="us"||r==="#")return"r-good";if(r==="-")return"r-mid";return"r-neu"}
+function rclass(f,r,T){const w=T&&T[f]&&T[f][r];if(f==="X"||w==="them")return"r-bad";if(w==="us"||r==="#")return"r-good";if(r==="-"||(r==="/"&&f!=="S"))return"r-mid";return"r-neu"}
 const optLabel=(f,r)=>{const o=FUND[f]&&FUND[f].o.find(x=>x[0]===r);return o?o[1]:r};
 
 const freshState=()=>({team:{name:"Mi equipo",players:[],table:clone(DEFAULT_TABLE),updatedAt:0},matches:{},deleted:{}});
@@ -1034,7 +1040,7 @@ function evLabel(e,P){
   const p=P[e.p];const who=p?"#"+p.num+" "+p.name:(e.f==="X"?"Equipo":"Sin jugador");
   return who+" · "+FUND[e.f].n+" "+optLabel(e.f,e.r).toLowerCase()+zoneTxt(e);
 }
-function evSym(e,T){if(e.f==="RE")return["+1","r-good"];if(e.f==="RP")return["−1","r-bad"];if(e.f==="T")return["T","r-neu"];if(e.f==="SUB")return["⇄","r-neu"];if(e.f==="LIB")return["L","r-neu"];if(e.f==="GAP")return["…","r-neu"];if(e.f==="X")return["=","r-bad"];return[e.r,rclass(e.f,e.r,T)]}
+function evSym(e,T){if(e.f==="RE")return["+1","r-good"];if(e.f==="RP")return["−1","r-bad"];if(e.f==="T")return["T","r-neu"];if(e.f==="SUB")return["⇄","r-neu"];if(e.f==="LIB")return["L","r-neu"];if(e.f==="GAP")return["…","r-neu"];if(e.f==="X")return["=","r-bad"];return[symTxt(e.r),rclass(e.f,e.r,T)]}
 /* Zonas (modo zonas del partido, m.zones). Campo rival visto desde el nuestro, red abajo: 1-6-5 fondo, 9-8-7 medio, 2-3-4 red.
    Origen del ataque en nuestro campo, red arriba: 4-3-2 delante, 5-6-1 detrás. e.z = zona de destino, e.zo = zona de origen (solo ataque). */
 const ZR=[[1,6,5],[9,8,7],[2,3,4]],ZO=[[4,3,2],[5,6,1]];
@@ -1205,8 +1211,8 @@ function renderSheet(){
     inner=`<header><div class="row">${sh.mode==="fault"?"":jersey(p,true)}<div><div style="font-weight:700;font-size:20px">${title}</div><div class="muted small">${sub}</div></div></div><button class="btn sm" data-act="close">Cerrar</button></header>
     ${chips}
     ${quick?`<p class="muted small" style="margin:0">Modo rápido: solo lo que cierra el rally.</p>`:""}
-    ${order.map(k=>`<div class="frow ${k===hot&&sh.mode==="new"?"hot":""}"><span class="fn">${FUND[k].n}</span>${m.zones&&sh.mode!=="fault"&&(k==="S"||k==="A")?zpick(k,sh):""}<div class="opts">${(quick?closing(T,k):FUND[k].o).map(o=>{const w=T[k]&&T[k][o[0]];const was=sh.prev&&sh.prev.f===k&&sh.prev.r===o[0];
-      return`<button class="opt ${k==="X"?"r-bad":rclass(k,o[0],T)}${was?" was":""}" data-act="log" data-f="${k}" data-r="${esc(o[0])}">${k==="X"?"":`<b>${esc(o[0])}</b>`}${esc(o[1])}${w?`<small>${w==="us"?"+1 nosotros":"+1 rival"}</small>`:""}</button>`}).join("")}</div></div>`).join("")}
+    ${order.map(k=>`<div class="frow ${k===hot&&sh.mode==="new"?"hot":""}"><span class="fn">${FUND[k].n}</span>${m.zones&&sh.mode!=="fault"&&(k==="S"||k==="A")?zpick(k,sh):""}<div class="opts${(quick?closing(T,k):FUND[k].o).length>4?" n7":""}">${(quick?closing(T,k):FUND[k].o).map(o=>{const w=T[k]&&T[k][o[0]];const was=sh.prev&&sh.prev.f===k&&sh.prev.r===o[0];
+      return`<button class="opt ${k==="X"?"r-bad":rclass(k,o[0],T)}${was?" was":""}" data-act="log" data-f="${k}" data-r="${esc(o[0])}">${k==="X"?"":`<b>${symTxt(o[0])}</b>`}${esc(o[1])}${w?`<small>${w==="us"?"+1 nosotros":"+1 rival"}</small>`:""}</button>`}).join("")}</div></div>`).join("")}
     ${sh.mode==="edit"?`<div class="row"><button class="btn danger" data-act="delev">Borrar esta jugada</button></div>`:""}`;
   }
   el.innerHTML=`<div class="sheet" role="dialog" aria-modal="true" aria-label="Jugada">${inner}</div>`;
@@ -1260,7 +1266,7 @@ function viewNew(){
 }
 
 /* ---------- Estadísticas ---------- */
-function blank(){return{S:{t:0,"#":0,"=":0,"+":0,"!":0,"-":0,"/":0},R:{t:0,"#":0,"+":0,"-":0,"=":0,"!":0,"/":0},A:{t:0,"#":0,"+":0,"/":0,"=":0},B:{t:0,"#":0,"+":0,"=":0,"/":0},D:{t:0,"#":0,"+":0,"=":0},E:{t:0,"#":0,"+":0,"=":0},X:{t:0},pts:0,err:0}}
+function blank(){const b={X:{t:0},pts:0,err:0};for(const f of"SRABDE"){b[f]={t:0};FUND[f].o.forEach(o=>{b[f][o[0]]=0})}return b}
 /* Reúne jugadas y rallies de los partidos elegidos, con el contexto calculado por replay */
 function gather(scope,setFilter){const list=[],rallies=[];
   for(const m of scope){const r=replay(m);r.sets.forEach((st,si)=>{if(setFilter!=="all"&&si!==+setFilter)return;
@@ -1393,7 +1399,7 @@ function viewStats(){
     <p class="muted small" style="margin:0">El número pequeño junto a cada porcentaje es cuántas acciones hay detrás; con menos de 3 sale atenuado. Eficacia de saque = (aces + positivos − errores) / saques. Eficacia de ataque = (puntos − errores − bloqueados) / ataques. Recepción positiva = perfectas (#) + positivas (+). El equipo incluye las jugadas sin jugador asignado.${st.hasCourt?" En pista: rallies que ha jugado (solo en sets con alineación; el líbero cuenta cuando está dentro) y +/− = rallies ganados menos perdidos con él en pista.":""}</p>`:`<p class="muted">Sin jugadas de jugadores en esta selección.</p>`}</div>`;
 }
 
-function helpBox(){const H=[["Side-out","Rallies ganados cuando saca el rival. Es la capacidad de recuperar el saque."],["Break","Rallies ganados con nuestro saque."],["Side-out recibiendo (modSO)","Side-out contando solo los rallies con nuestra recepción apuntada: quita los errores de saque del rival, que no dependen de nosotros."],["Al primer ataque (FBSO)","Recepciones tras las que ganamos el punto en el primer ataque (K1), sin defensa de por medio."],["Zonas","Campo rival visto desde el nuestro: 2-3-4 junto a la red, 9-8-7 en medio, 1-6-5 al fondo. Origen del ataque en nuestro campo: 4-3-2 delante, 5-6-1 detrás."],["Rotación R1…R6","Dónde está el colocador al empezar el rally: R1 = en P1."],["K1 / K2","K1: el primer ataque después de recibir. K2: el contraataque, después de una defensa o un bloqueo."],["Eficacia","Lo bueno menos lo malo, partido por el total. Puede ser negativa."],["% Pto","Ataques que acaban en punto, sobre el total de ataques."],["Recepción positiva","Recepciones perfectas (#) o positivas (+)."],["+/−","Rallies ganados menos perdidos mientras el jugador estaba en pista."],["#  +  !  −  /  =","Perfecto o punto · positivo · en juego · negativo · bloqueado (en saque: positivo) · error."]];
+function helpBox(){const H=[["Escala","Los 6 símbolos de DataVolley: # lo mejor, + positivo, ! intermedio, - negativo, / según el fundamento (bueno en el saque: el rival devuelve sin atacar; malo en el resto) y = error. El punto (•) es una acción apuntada sin valorar: cuenta en el total y no en la calidad."],["Side-out","Rallies ganados cuando saca el rival. Es la capacidad de recuperar el saque."],["Break","Rallies ganados con nuestro saque."],["Side-out recibiendo (modSO)","Side-out contando solo los rallies con nuestra recepción apuntada: quita los errores de saque del rival, que no dependen de nosotros."],["Al primer ataque (FBSO)","Recepciones tras las que ganamos el punto en el primer ataque (K1), sin defensa de por medio."],["Zonas","Campo rival visto desde el nuestro: 2-3-4 junto a la red, 9-8-7 en medio, 1-6-5 al fondo. Origen del ataque en nuestro campo: 4-3-2 delante, 5-6-1 detrás."],["Rotación R1…R6","Dónde está el colocador al empezar el rally: R1 = en P1."],["K1 / K2","K1: el primer ataque después de recibir. K2: el contraataque, después de una defensa o un bloqueo."],["Eficacia","Lo bueno menos lo malo, partido por el total. Puede ser negativa."],["% Pto","Ataques que acaban en punto, sobre el total de ataques."],["Recepción positiva","Recepciones perfectas (#) o positivas (+)."],["+/−","Rallies ganados menos perdidos mientras el jugador estaba en pista."],["#  +  !  −  /  =","Perfecto o punto · positivo · en juego · negativo · bloqueado (en saque: positivo) · error."]];
   return`<details class="help"><summary>¿Qué significa cada cifra?</summary><dl>${H.map(([k,v])=>`<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl></details>`}
 
 /* Side-out y break por rotación (posición del colocador) y ataque K1 frente a K2 */
@@ -1477,7 +1483,7 @@ function viewTeam(){
   <div class="zone"><div class="row spread"><p class="hand">Qué cierra cada jugada</p><button class="btn sm" data-act="tablereset">Valores por defecto</button></div>
     <p class="muted small" style="margin:0">Para cada fundamento y evaluación, quién se lleva el punto. Se aplica a los partidos nuevos; cada partido guarda la tabla con la que se apuntó.</p>
     <div class="otab">${["S","R","A","B","D","E","X"].map(f=>`<div class="orow"><span class="fn">${FUND[f].n}</span><div class="ocells">${FUND[f].o.map(o=>{const w=T[f]&&T[f][o[0]]||"";
-      return`<label class="ocell">${f==="X"?"":`<b>${esc(o[0])}</b> `}${esc(o[1])}<select data-otab="${f}" data-r="${esc(o[0])}"><option value="" ${!w?"selected":""}>Sigue el rally</option><option value="us" ${w==="us"?"selected":""}>Punto nuestro</option><option value="them" ${w==="them"?"selected":""}>Punto rival</option></select></label>`}).join("")}</div></div>`).join("")}</div></div>`;
+      return`<label class="ocell">${f==="X"?"":`<b>${symTxt(o[0])}</b> `}${esc(o[1])}<select data-otab="${f}" data-r="${esc(o[0])}"><option value="" ${!w?"selected":""}>Sigue el rally</option><option value="us" ${w==="us"?"selected":""}>Punto nuestro</option><option value="them" ${w==="them"?"selected":""}>Punto rival</option></select></label>`}).join("")}</div></div>`).join("")}</div></div>`;
 }
 
 /* Plantilla en bloque: "4 Marta REC" por línea. Devuelve qué se añade, qué se actualiza y qué no se entiende */
