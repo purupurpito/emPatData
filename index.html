@@ -721,6 +721,12 @@ async function accDelete(){if(share)await liveStop(true);await fsReq("DELETE","l
   for(const d of(j&&j.documents)||[])await fsReq("DELETE","users/"+acc.uid+"/docs/"+d.name.split("/").pop());
   if(j&&j.nextPageToken)return accDelete();
   await fbIdt("accounts:delete",{idToken:await fbToken()});await accOut(false)}
+/* Borrar la plantilla y todos los partidos. Con cuenta, cada partido deja una marca de borrado cifrada para que los demás dispositivos también lo quiten
+   (igual que al borrar un partido suelto); la cuenta sigue y se puede seguir usando. El partido de ejemplo no se toca. */
+async function wipeAll(){const now=Date.now();if(share)await liveStop(true);
+  for(const id in S.matches){if(S.matches[id].example)continue;delete S.matches[id];S.deleted[id]=now;if(acc)markDirty("m_"+id)}
+  S.team={name:"Mi equipo",players:[],table:clone(DEFAULT_TABLE),updatedAt:now};if(acc)markDirty("team");
+  ui.liveId=null;ui.statsId=null;pickLive();saveLocal();if(acc&&col){clearTimeout(flushT);await flush()}}
 const ACC_MSG={user:"El nombre de usuario va de 3 a 30 letras sin tildes, números, punto, guion o guion bajo, sin espacios.",short:"La contraseña tiene que tener al menos 8 caracteres.",
   EMAIL_EXISTS:"Ese nombre de usuario ya está cogido. Prueba otro.",INVALID_LOGIN_CREDENTIALS:"Usuario o contraseña incorrectos.",EMAIL_NOT_FOUND:"Usuario o contraseña incorrectos.",INVALID_PASSWORD:"Usuario o contraseña incorrectos.",
   TOO_MANY_ATTEMPTS_TRY_LATER:"Demasiados intentos seguidos. Espera unos minutos.",USER_DISABLED:"Esta cuenta está desactivada.",unavailable:"Sin conexión. Inténtalo cuando tengas internet.",
@@ -747,8 +753,9 @@ function accZone(){const a=ui.acc||{},busy=a.busy?"disabled":"";
     return`<div class="zone" id="acczone"><p class="hand">Tu cuenta</p>
     <p class="small" style="margin:0">Has entrado como <b>${esc(acc.user)}</b>. La plantilla y los partidos se guardan cifrados en tu cuenta: entra con el mismo usuario en otro móvil u ordenador y los tendrás allí. <a href="privacidad.html" target="_blank" rel="noopener">Privacidad</a></p>
     ${ask==="out"?`<div class="frow"><span class="small">¿Dejas los datos en este dispositivo? Si no es tuyo, bórralos: siguen en tu cuenta.</span><div class="row"><button class="btn sm" data-act="accout" ${busy}>Salir y dejarlos aquí</button><button class="btn sm danger" data-act="accoutwipe" ${busy}>Salir y borrarlos de aquí</button><button class="btn sm" data-act="accno">Cancelar</button></div></div>`
+    :ask==="wipe"?`<div class="frow"><span class="small">Se borran la plantilla y todos los partidos de tu cuenta y de todos los dispositivos donde entres con ella, para siempre. La cuenta sigue, vacía. Si quieres conservarlos, descarga antes una copia.</span><div class="row"><button class="btn sm danger" data-act="wipeyes" ${busy}>Borrar todos los datos</button><button class="btn sm" data-act="accno">Cancelar</button></div></div>`
     :ask==="del"?`<div class="frow"><span class="small">Se borra la cuenta y todo lo guardado en ella, para siempre. Lo que hay en este dispositivo se queda.</span><div class="row"><button class="btn sm danger" data-act="accdelyes" ${busy}>Borrar la cuenta</button><button class="btn sm" data-act="accno">Cancelar</button></div></div>`
-    :`<div class="row"><button class="btn sm" data-act="accask" data-v="out">Cerrar sesión</button><button class="btn sm danger" data-act="accask" data-v="del">Borrar la cuenta</button></div>`}${err}</div>`}
+    :`<div class="row"><button class="btn sm" data-act="accask" data-v="out">Cerrar sesión</button><button class="btn sm danger" data-act="accask" data-v="wipe">Borrar todos los datos</button><button class="btn sm danger" data-act="accask" data-v="del">Borrar la cuenta</button></div>`}${err}</div>`}
   const nw=!!a.nw;
   return`<div class="zone" id="acczone"><p class="hand">Tu cuenta</p>
     <p class="muted small" style="margin:0">Opcional. Con una cuenta tienes la plantilla y los partidos en cualquier móvil u ordenador, y puedes compartir partidos en directo. Solo se pide un nombre de usuario y una contraseña: ni correo, ni teléfono, ni edad. Todo se cifra en este dispositivo antes de salir; en el servidor solo hay texto cifrado. <a href="privacidad.html" target="_blank" rel="noopener">Privacidad</a></p>
@@ -1486,7 +1493,8 @@ function applyBig(){document.documentElement.classList.toggle("big",bigText())}
 const nn=(n,one,many)=>n+" "+(n===1?one:many);
 function backupZone(){const lb=lastBackup(),n=Object.values(S.matches).filter(m=>!m.example).length,rs=ui.restore;
   const when=lb?new Date(lb).toLocaleDateString("es-ES",{day:"numeric",month:"short"}):null;
-  let body=`<div class="row"><button class="btn sm primary" data-act="backup" ${n||S.team.players.length?"":"disabled"}>Descargar copia</button><button class="btn sm" data-act="restoreopen">Abrir una copia o un partido recibido</button></div>`;
+  let body=`<div class="row"><button class="btn sm primary" data-act="backup" ${n||S.team.players.length?"":"disabled"}>Descargar copia</button><button class="btn sm" data-act="restoreopen">Abrir una copia o un partido recibido</button>${acc?"":`<button class="btn sm danger" data-act="wipeask" ${n||S.team.players.length?"":"disabled"}>Borrar todo</button>`}</div>`;
+  if(ui.wipeAsk&&!acc)body+=`<div class="frow"><span class="small">Se borran la plantilla y todos los partidos de este dispositivo, para siempre. Si quieres conservarlos, descarga antes una copia.</span><div class="row"><button class="btn sm danger" data-act="wipeyes">Borrar todos los datos</button><button class="btn sm" data-act="wipeno">Cancelar</button></div></div>`;
   if(rs&&rs.open){body+=rs.d?`<div class="frow"><span class="small"><b>Esta copia trae:</b> ${nn(rs.add,"partido nuevo","partidos nuevos")}${rs.back?` (${rs.back===1?"lo":"los"} habías borrado)`:""}, ${nn(rs.upd,"con jugadas que aquí no tienes","con jugadas que aquí no tienes")}, ${nn(rs.same,"igual","iguales")}${rs.newPl?` y ${nn(rs.newPl,"jugador nuevo","jugadores nuevos")}`:""}.${rs.byNum?` ${nn(rs.byNum,"jugador se une","jugadores se unen")} a tu plantilla por el dorsal.`:""}${rs.tbl?" También trae su tabla «Qué cierra cada jugada».":""} No se borra nada de lo que ya hay.${rs.clash&&rs.clash.length?`<br><span style="color:var(--mid);font-weight:600">Ojo, mismo dorsal y otro nombre: ${rs.clash.map(esc).join(" · ")}. Sus jugadas pasarán a tu jugador; si no es la misma persona, cambia el dorsal en el fichero de origen.</span>`:""}</span>
       <div class="row"><button class="btn sm primary" data-act="restoredo" ${rs.add||rs.upd||rs.newPl||rs.tbl?"":"disabled"}>Restaurar</button><button class="btn sm" data-act="restorecancel">Cancelar</button></div></div>`
     :`<div class="frow"><label class="f">Elige el fichero .json (copia o partido)<input type="file" id="restore-file" accept=".json,application/json"></label>
@@ -1615,6 +1623,9 @@ document.addEventListener("click",async ev=>{
     case"accask":{ui.acc={ask:t.dataset.v};render();break}
     case"accno":{ui.acc={};render();break}
     case"accout":case"accoutwipe":{ui.acc={ask:"out",busy:true};render();await accOut(a==="accoutwipe");ui.acc={};render();toast(a==="accoutwipe"?"Sesión cerrada y datos borrados de este dispositivo":"Sesión cerrada. Los datos siguen en este dispositivo y en tu cuenta");break}
+    case"wipeask":{ui.wipeAsk=true;render();break}
+    case"wipeno":{ui.wipeAsk=false;render();break}
+    case"wipeyes":{ui.wipeAsk=false;if(acc){ui.acc={ask:"wipe",busy:true};render()}await wipeAll();ui.acc={};render();toast(acc?"Datos borrados de la cuenta y de este dispositivo":"Datos borrados de este dispositivo",null,4000);break}
     case"accdelyes":{ui.acc={ask:"del",busy:true};render();try{await accDelete();ui.acc={};render();toast("Cuenta borrada. Lo de este dispositivo se queda",null,4000)}catch(e){ui.acc={ask:"del",err:e&&e.code||"error"};render()}break}
     case"vplay":{const v=vEl();if(v){vid.hold=false;v.paused?v.play().catch(()=>{}):v.pause()}break}
     case"vskip":{const v=vEl();if(v)v.currentTime=Math.max(0,v.currentTime+(+t.dataset.d));break}
