@@ -5,9 +5,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="emPat Data: estadísticas de vóley a pie de pista. Apunta tocando jugadores y saca side-out, break, eficacia, zonas y mapas. Los datos se quedan en tu dispositivo o, si quieres, en una cuenta cifrada.">
 <meta name="theme-color" content="#0F1B33">
+<link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icono.svg" type="image/svg+xml">
 <link rel="icon" href="icono-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="icono-180.png">
+<meta name="apple-mobile-web-app-title" content="emPat Data">
 <style>:root{box-sizing:border-box}body{margin:0;padding:0}[hidden]:not([hidden=until-found i]){display:none!important}</style>
 </head>
 <body>
@@ -74,6 +76,7 @@ h2{font-size:24px;line-height:1.15}
 .zone.bare{background:transparent;padding:0}
 /* Botones */
 .btn{border:0;background:var(--fill);border-radius:var(--r-sm);padding:10px 16px;font-weight:600;font-size:15px;min-height:44px;color:var(--us)}
+a.btn{display:inline-flex;align-items:center;text-decoration:none}
 .btn.primary{background:var(--us);color:var(--on-accent)}
 .btn.danger{color:var(--bad);background:var(--bad-tint)}
 .btn.sm{min-height:36px;padding:6px 12px;font-size:14px;border-radius:10px}
@@ -713,7 +716,7 @@ async function accEnter(user,pass,create){user=accUser(user);
   db=null;col=null;await connect();if(!col)setSync("offline")}
 async function accOut(wipe){if(share)await liveStop(true);acc=null;accSave();db=null;col=null;dirty.clear();
   if(wipe){S=freshState();S.matches.ejemplo=makeExample();saveLocal();ui.liveId=null;pickLive()}setSync("local")}
-async function accDelete(){if(share)await liveStop(true);
+async function accDelete(){if(share)await liveStop(true);await fsReq("DELETE","live/"+acc.uid);
   const j=await fsReq("GET","users/"+acc.uid+"/docs?pageSize=300&mask.fieldPaths=kind");
   for(const d of(j&&j.documents)||[])await fsReq("DELETE","users/"+acc.uid+"/docs/"+d.name.split("/").pop());
   if(j&&j.nextPageToken)return accDelete();
@@ -722,17 +725,33 @@ const ACC_MSG={user:"El nombre de usuario va de 3 a 30 letras sin tildes, númer
   EMAIL_EXISTS:"Ese nombre de usuario ya está cogido. Prueba otro.",INVALID_LOGIN_CREDENTIALS:"Usuario o contraseña incorrectos.",EMAIL_NOT_FOUND:"Usuario o contraseña incorrectos.",INVALID_PASSWORD:"Usuario o contraseña incorrectos.",
   TOO_MANY_ATTEMPTS_TRY_LATER:"Demasiados intentos seguidos. Espera unos minutos.",USER_DISABLED:"Esta cuenta está desactivada.",unavailable:"Sin conexión. Inténtalo cuando tengas internet.",
   same:"Las dos contraseñas no coinciden.",sure:"Marca la casilla para confirmar que has apuntado la contraseña."};
+/* ---------- Instalar la app ----------
+   Instalada (o la APK de Android, que abre esta misma web) se abre sin internet. En iPhone, añadirla a la pantalla de inicio evita que Safari borre los datos tras días sin abrirla. */
+let installEv=null;
+window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();installEv=e;if(ui.view==="team")render()});
+window.addEventListener("appinstalled",()=>{installEv=null;keepData();if(ui.view==="team")render()});
+const standalone=()=>{try{return matchMedia("(display-mode: standalone)").matches||navigator.standalone===true||document.referrer.startsWith("android-app://")}catch(e){return false}};
+/* Pide al navegador que no borre los datos del dispositivo cuando le falte espacio */
+function keepData(){try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persisted().then(p=>{if(!p)return navigator.storage.persist()}).catch(()=>{})}catch(e){}}
+const APK_URL="https://github.com/purupurpito/emPatData/releases/latest/download/empat-data.apk";
+function installZone(){if(standalone())return"";const ua=navigator.userAgent||"";
+  const ios=/iPhone|iPad|iPod/.test(ua)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1),android=/Android/.test(ua);
+  return`<div class="zone" id="installzone"><p class="hand">La app en tu móvil</p>
+    <p class="muted small" style="margin:0">Instalada se abre con un toque y funciona sin internet en el pabellón: lo que apuntes se queda en el móvil y, si tienes cuenta, se sube cuando vuelve la conexión.${ios?" En iPhone es además la forma de que Safari no borre los datos si pasas días sin abrirla.":""}</p>
+    ${ios?`<p class="small" style="margin:0">En iPhone o iPad: abre esta página en Safari, toca <b>Compartir</b> y después <b>Añadir a pantalla de inicio</b>.</p>`:""}
+    ${installEv||android?`<div class="row">${installEv?`<button class="btn sm primary" data-act="install">Instalar la app</button>`:""}${android?`<a class="btn sm" href="${APK_URL}">Descargar la APK</a>`:""}</div>`:""}
+    ${!ios&&!installEv?`<p class="muted small" style="margin:0">${android?"O, en Chrome, menú ⋮ → Añadir a pantalla de inicio.":"En Chrome o Edge: menú ⋮ → Instalar emPat Data. En el móvil Android también hay APK."}</p>`:""}</div>`}
 function accZone(){const a=ui.acc||{},busy=a.busy?"disabled":"";
   const err=a.err?`<p class="small" role="alert" style="margin:0;color:var(--bad)">${esc(ACC_MSG[a.err]||"No se ha podido. Inténtalo otra vez.")}</p>`:"";
   if(acc){const ask=a.ask;
     return`<div class="zone" id="acczone"><p class="hand">Tu cuenta</p>
-    <p class="small" style="margin:0">Has entrado como <b>${esc(acc.user)}</b>. La plantilla y los partidos se guardan cifrados en tu cuenta: entra con el mismo usuario en otro móvil u ordenador y los tendrás allí.</p>
+    <p class="small" style="margin:0">Has entrado como <b>${esc(acc.user)}</b>. La plantilla y los partidos se guardan cifrados en tu cuenta: entra con el mismo usuario en otro móvil u ordenador y los tendrás allí. <a href="privacidad.html" target="_blank" rel="noopener">Privacidad</a></p>
     ${ask==="out"?`<div class="frow"><span class="small">¿Dejas los datos en este dispositivo? Si no es tuyo, bórralos: siguen en tu cuenta.</span><div class="row"><button class="btn sm" data-act="accout" ${busy}>Salir y dejarlos aquí</button><button class="btn sm danger" data-act="accoutwipe" ${busy}>Salir y borrarlos de aquí</button><button class="btn sm" data-act="accno">Cancelar</button></div></div>`
     :ask==="del"?`<div class="frow"><span class="small">Se borra la cuenta y todo lo guardado en ella, para siempre. Lo que hay en este dispositivo se queda.</span><div class="row"><button class="btn sm danger" data-act="accdelyes" ${busy}>Borrar la cuenta</button><button class="btn sm" data-act="accno">Cancelar</button></div></div>`
     :`<div class="row"><button class="btn sm" data-act="accask" data-v="out">Cerrar sesión</button><button class="btn sm danger" data-act="accask" data-v="del">Borrar la cuenta</button></div>`}${err}</div>`}
   const nw=!!a.nw;
   return`<div class="zone" id="acczone"><p class="hand">Tu cuenta</p>
-    <p class="muted small" style="margin:0">Opcional. Con una cuenta tienes la plantilla y los partidos en cualquier móvil u ordenador, y puedes compartir partidos en directo. Solo se pide un nombre de usuario y una contraseña: ni correo, ni teléfono, ni edad. Todo se cifra en este dispositivo antes de salir; en el servidor solo hay texto cifrado.</p>
+    <p class="muted small" style="margin:0">Opcional. Con una cuenta tienes la plantilla y los partidos en cualquier móvil u ordenador, y puedes compartir partidos en directo. Solo se pide un nombre de usuario y una contraseña: ni correo, ni teléfono, ni edad. Todo se cifra en este dispositivo antes de salir; en el servidor solo hay texto cifrado. <a href="privacidad.html" target="_blank" rel="noopener">Privacidad</a></p>
     <form id="accform" class="frow" style="gap:8px">
       <label class="f">Nombre de usuario<input type="text" id="acc-user" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="30" value="${esc(a.user||"")}"></label>
       <label class="f">Contraseña<input type="password" id="acc-pass" autocomplete="${nw?"new-password":"current-password"}"></label>
@@ -1444,6 +1463,7 @@ function viewTeam(){
     ${ui.bulk&&ui.bulk.prev?`<div class="small" style="margin-top:6px">${ui.bulk.prev}</div>`:""}
     <div class="row" style="margin-top:8px"><button class="btn sm" data-act="bulkcheck">Revisar</button>${ui.bulk&&ui.bulk.ok?`<button class="btn sm primary" data-act="bulkdo">Añadir ${ui.bulk.ok.length}</button>`:""}<button class="btn sm" data-act="bulkcopy" ${pl.length?"":"disabled"}>Copiar plantilla</button></div></details>
   </div>
+  ${installZone()}
   <div class="zone"><p class="hand">Pantalla</p><label class="row" style="gap:10px;font-size:15px"><input type="checkbox" id="bigtxt" ${bigText()?"checked":""}> Letra y botones más grandes</label><span class="muted small">Se guarda solo en este dispositivo.</span></div>
   ${accZone()}
   ${backupZone()}
@@ -1513,7 +1533,8 @@ document.addEventListener("click",async ev=>{
     case"printgo":{const f=document.querySelector("#printbox iframe");try{f.contentWindow.focus();f.contentWindow.print()}catch(e){toast("Aquí no se puede imprimir: descarga la hoja")}break}
     case"printdl":{await saveFile(t.dataset.name,printHTML(!!($("#print-pl")||{}).checked),"Hoja guardada: ábrela e imprímela o guárdala como PDF");break}
     case"detail":{if(!m)break;if(isQuick(m))delete m.detail;else m.detail="rapido";m.metaAt=Date.now();touch(m);render();toast(isQuick(m)?"Modo rápido: solo lo que cierra el rally":"Modo completo: cada toque");break}
-    case"create":{readNewForm();const f=ui.newForm;if(!f.rival.trim()){toast("Escribe el nombre del rival");$("#nf-rival").focus();break}
+    case"install":{if(installEv){const e=installEv;installEv=null;try{await e.prompt();await e.userChoice}catch(x){}render()}break}
+    case"create":{keepData();readNewForm();const f=ui.newForm;if(!f.rival.trim()){toast("Escribe el nombre del rival");$("#nf-rival").focus();break}
       if(!f.roster.length){toast("Marca al menos un convocado");break}
       const id=newId();const mm={id,v:2,rival:f.rival.trim(),date:f.date||today(),comp:f.comp.trim(),bestOf:+f.bestOf,pts:+f.pts||25,tie:+f.tie||15,maxSubs:6,
         table:clone(S.team.table||DEFAULT_TABLE),players:clone(S.team.players),roster:f.roster.slice(),sets:[{first:f.first,lineup:null,log:[]}],status:"live",updatedAt:Date.now()};
@@ -1670,6 +1691,9 @@ pickLive();
 if(!ui.liveId&&S.matches.ejemplo&&S.matches.ejemplo.status==="live")ui.liveId="ejemplo";
 render();
 connect();
+/* Sin internet: un service worker guarda la app (sw.js, lo genera tools/demo.mjs) y la abre aunque no haya red */
+if("serviceWorker"in navigator&&(location.protocol==="https:"||location.hostname==="localhost"))navigator.serviceWorker.register("sw.js").catch(()=>{});
+if(standalone())keepData();
 window.__empat={get share(){return share},get acc(){return acc},accEnter,fbDb,liveSnapshot,seal,unseal,get S(){return S},replay,effective,normalizeMatch,mergeMatch,parseBackup,backupText,matchFileText,applyBackup,statsImage,computeStats,gather,printHTML,compKey,seasonMatches,get ui(){return ui}};
 })();
 </script>

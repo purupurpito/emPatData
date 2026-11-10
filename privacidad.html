@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Privacidad · emPat Data</title>
+<meta name="description" content="Qué datos guarda emPat Data, dónde y cómo borrarlos.">
+<meta name="theme-color" content="#0F1B33">
+<link rel="icon" href="icono.svg" type="image/svg+xml">
+<style>
+:root{--bg:#F2F3F6;--card:#fff;--fill:#EEF0F4;--ink:#0F1B33;--muted:#5F6B80;--sep:#E3E6EC;--us:#B8441A;--good:#17804A;
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0A1222;--card:#131E33;--fill:#1C2942;--ink:#F2F4F8;--muted:#9AA6BD;--sep:#1F2C47;--us:#FF7A45;--good:#32c46f;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0A1222;--card:#131E33;--fill:#1C2942;--ink:#F2F4F8;--muted:#9AA6BD;--sep:#1F2C47;--us:#FF7A45;--good:#32c46f;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 var(--font);-webkit-font-smoothing:antialiased}
+main{max-width:760px;margin:0 auto;padding:24px 16px 48px}
+header{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+header img{width:44px;height:44px;border-radius:11px}
+header b{font-size:22px;letter-spacing:-.01em}header span{display:block;color:var(--muted);font-size:14px}
+.card{background:var(--card);border-radius:16px;padding:18px 18px 8px;margin:0 0 14px}
+h1{font-size:26px;margin:0 0 6px;letter-spacing:-.01em}
+h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0 0 8px}
+p,li{margin:0 0 10px}ul{padding-left:20px;margin:0 0 10px}
+.lead{color:var(--muted);margin-bottom:18px}
+.ok{background:var(--fill);border-radius:12px;padding:12px 14px;margin:0 0 14px}
+.ok b{color:var(--good)}
+a{color:var(--us);font-weight:600}
+.back{display:inline-flex;align-items:center;min-height:44px;padding:10px 16px;border-radius:12px;background:var(--fill);text-decoration:none}
+small{color:var(--muted)}
+</style>
+</head>
+<body>
+<main>
+<header><img src="icono.svg" alt=""><div><b>emPat Data</b><span>Privacidad</span></div></header>
+<h1>Qué guarda la app y dónde</h1>
+<p class="lead">Versión del 10 de noviembre de 2026. En corto: sin cuenta, nada sale de tu dispositivo. Con cuenta, lo que sube va cifrado y nadie más que tú puede leerlo.</p>
+
+<div class="ok"><b>Lo que no hay:</b> ni publicidad, ni analítica, ni cookies de seguimiento, ni scripts de terceros. No se pide correo, teléfono, edad ni ningún dato de contacto.</div>
+
+<section class="card"><h2>Sin cuenta</h2>
+<p>La plantilla (dorsal, nombre y posición de cada jugador), los partidos y las estadísticas se guardan solo en el navegador de tu dispositivo. No se envían a ningún sitio.</p>
+<p>Los ficheros que descargas (copia de seguridad, CSV, imagen, hoja para imprimir) o envías a otra persona quedan bajo tu control.</p>
+</section>
+
+<section class="card"><h2>Con cuenta (opcional)</h2>
+<ul>
+<li><b>Qué se pide:</b> un nombre de usuario y una contraseña. Elige un usuario que no sea tu nombre completo.</li>
+<li><b>Qué se guarda:</b> la plantilla, los partidos y las estadísticas, cifrados en tu dispositivo (AES-GCM) antes de salir. La clave sale de tu contraseña y no se envía nunca. En el servidor solo hay texto cifrado, la fecha de cada cambio y si un partido está borrado.</li>
+<li><b>Dónde:</b> en Firebase, de Google. Los datos van a Firestore en Europa. El servicio de cuentas de Google guarda además el usuario, la fecha de alta y de la última entrada y datos técnicos de seguridad, como la dirección IP.</li>
+<li><b>Contraseña olvidada:</b> como nadie más tiene la clave, lo guardado en la cuenta no se puede recuperar. Lo que tengas en el dispositivo y tus copias de seguridad sí se conservan.</li>
+<li><b>Cuánto tiempo:</b> mientras exista la cuenta. Al borrarla, se borra todo lo que hay en ella.</li>
+</ul>
+</section>
+
+<section class="card"><h2>Directo para seguir un partido</h2>
+<p>Si compartes un partido en directo, se publica una foto cifrada del marcador, las últimas jugadas y las cifras. Solo la puede leer quien tenga el código, porque la clave va dentro del código. Salen los dorsales; los nombres de pila, solo si lo eliges.</p>
+<p>Al pulsar «Dejar de compartir» se borra. Si no lo paras, deja de enseñarse a las 12 horas y el texto cifrado se queda hasta el siguiente directo o hasta que borres la cuenta.</p>
+</section>
+
+<section class="card"><h2>Jugadores menores de edad</h2>
+<p>La app no trata datos especialmente protegidos (salud, origen, religión…). Aun así, el nombre de un jugador y sus estadísticas son datos personales, y muchas veces de menores.</p>
+<ul>
+<li>El dorsal ya identifica a cada jugador: puedes poner solo el nombre de pila, unas iniciales o un alias.</li>
+<li>Quien apunta los nombres (entrenador o club) debe tener el permiso de las familias o del club para hacerlo, como con cualquier hoja de estadísticas.</li>
+<li>No escribas lesiones ni otros datos de salud en los nombres.</li>
+</ul>
+</section>
+
+<section class="card"><h2>Tus opciones</h2>
+<ul>
+<li><b>Ver y corregir:</b> todo lo que hay está en la propia app y se cambia ahí.</li>
+<li><b>Llevártelo:</b> Equipo › Copia de seguridad descarga todo en un fichero .json.</li>
+<li><b>Borrar del dispositivo:</b> Equipo › Tu cuenta › Cerrar sesión › «Salir y borrarlos de aquí», o borra los datos del sitio en tu navegador.</li>
+<li><b>Borrar la cuenta:</b> Equipo › Tu cuenta › Borrar la cuenta. Se borra todo lo guardado en ella al momento.</li>
+<li>Si crees que algo no se ha hecho bien, puedes reclamar ante la Agencia Española de Protección de Datos (<a href="https://www.aepd.es" rel="noopener">aepd.es</a>).</li>
+</ul>
+</section>
+
+<section class="card"><h2>Quién está detrás</h2>
+<p>emPat Data es un proyecto personal sin ánimo de lucro, publicado en GitHub por <a href="https://github.com/purupurpito" rel="noopener">purupurpito</a>. La web se sirve desde GitHub Pages, que, como cualquier servidor, registra datos técnicos de las visitas.</p>
+<p><small>Si esta página cambia, se actualiza la fecha de arriba.</small></p>
+</section>
+
+<p><a class="back" href="./">← Volver a la app</a></p>
+</main>
+</body>
+</html>
