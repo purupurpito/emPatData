@@ -1,7 +1,7 @@
 // emPat Data sin internet. Generado por tools/demo.mjs: no editar a mano.
 // Guarda la app al instalarse y la sirve desde la caché (rápido y sin red); en segundo plano trae la versión nueva si la hay.
 // Firebase (cuenta y directo) no pasa por aquí: va directo a la red y la app ya sabe esperar a que vuelva la conexión.
-const CACHE = "empat-074c443eccad";
+const CACHE = "empat-79779313490e";
 const SHELL = ["./","privacidad.html","manifest.webmanifest","icono.svg","icono-32.png","icono-180.png","icono-192.png","icono-512.png","icono-maskable-512.png"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())) });
 self.addEventListener("activate", e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k.startsWith("empat-") && k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())) });
