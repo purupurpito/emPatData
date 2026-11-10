@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="description" content="emPat Data: estadísticas de vóley a pie de pista. Apunta tocando jugadores y saca side-out, break, eficacia, zonas y mapas. Los datos se quedan en tu dispositivo.">
+<meta name="description" content="emPat Data: estadísticas de vóley a pie de pista. Apunta tocando jugadores y saca side-out, break, eficacia, zonas y mapas. Los datos se quedan en tu dispositivo o, si quieres, en una cuenta cifrada.">
 <meta name="theme-color" content="#0F1B33">
 <link rel="icon" href="icono.svg" type="image/svg+xml">
 <link rel="icon" href="icono-32.png" sizes="32x32" type="image/png">
@@ -146,7 +146,7 @@ h2{font-size:24px;line-height:1.15}
 .opt:active{filter:brightness(.92)}
 /* Formularios */
 label.f{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:500;color:var(--muted)}
-input[type=text],input[type=number],input[type=date],select,textarea{background:var(--fill);border:0;border-radius:10px;padding:10px 12px;min-height:44px;width:100%;color:var(--ink);font-size:16px}
+input[type=text],input[type=password],input[type=number],input[type=date],select,textarea{background:var(--fill);border:0;border-radius:10px;padding:10px 12px;min-height:44px;width:100%;color:var(--ink);font-size:16px}
 input:focus,select:focus,textarea:focus{outline:2px solid var(--us);outline-offset:0}
 .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
 .rmpask{grid-column:1/-1;display:flex;gap:8px;justify-content:flex-end}
@@ -361,7 +361,8 @@ function cleanMatch(m){if(m.id!=null)m.id=sid(m.id);if(m.date!=null&&!/^\d{4}-\d
 function rclass(f,r,T){const w=T&&T[f]&&T[f][r];if(f==="X"||w==="them")return"r-bad";if(w==="us"||r==="#")return"r-good";if(r==="-")return"r-mid";return"r-neu"}
 const optLabel=(f,r)=>{const o=FUND[f]&&FUND[f].o.find(x=>x[0]===r);return o?o[1]:r};
 
-let S={team:{name:"Mi equipo",players:[],table:clone(DEFAULT_TABLE),updatedAt:0},matches:{},deleted:{}};
+const freshState=()=>({team:{name:"Mi equipo",players:[],table:clone(DEFAULT_TABLE),updatedAt:0},matches:{},deleted:{}});
+let S=freshState();
 const ui={view:"live",liveId:null,sheet:null,statsId:null,statsSet:"all",confirmDel:null,newForm:null,toast:null,logOpen:false,logSet:null};
 
 /* ---------- Formato de los partidos y migración ----------
@@ -625,10 +626,15 @@ async function flush(){if(!col||flushing)return;flushing=true;let failed=false;
     try{await col.doc(k).set(body)}catch(e){dirty.add(k);failed=true;setSync(e&&e.code==="unavailable"?"offline":"error");break}}}
   finally{flushing=false}
   if(dirty.size){clearTimeout(flushT);flushT=setTimeout(flush,failed?10000:1200)}else setSync("cloud")}
+const hasClaude=()=>!!(window.claude&&typeof window.claude.use==="function");
+/* De dónde se sincroniza: dentro de claude.ai, su base de datos; fuera (la web), la cuenta propia cifrada (Firebase) */
+async function dbSource(){
+  if(hasClaude()){const[d,u]=await Promise.all([window.claude.use("db"),window.claude.use("user")]);if(!d||!u)return null;
+    const id=await u.id();return id?{d,c:d.collection("data/users/"+id)}:null}
+  if(!acc)return null;await fbToken();return{d:fbDb,c:fbCol}}
+async function myUid(){if(!hasClaude())return acc&&acc.uid||null;try{const u=await window.claude.use("user");return u&&await u.id()}catch(e){return null}}
 async function connect(){
-  if(!window.claude||typeof window.claude.use!=="function")return;
-  try{const[d,u]=await Promise.all([window.claude.use("db"),window.claude.use("user")]);if(!d||!u)return;
-    const id=await u.id();if(!id)return;const c=d.collection("data/users/"+id);
+  try{const src=await dbSource();if(!src)return;const d=src.d,c=src.c;
     const snap=await c.limit(1000).get();const remote={};snap.docs.forEach(doc=>{remote[doc.id]=doc.data()});
     const rt=remote.team;
     if(rt&&rt.data&&(rt.updatedAt||0)>(S.team.updatedAt||0)){S.team=clone(rt.data);S.team.players=cleanPlayers(S.team.players);if(!S.team.table)S.team.table=clone(DEFAULT_TABLE)}
@@ -647,6 +653,106 @@ async function connect(){
 }
 /* Si al arrancar no había red, se vuelve a intentar al recuperarla o al volver a la pestaña */
 function reconnect(){if(!col&&!connect.busy){connect.busy=true;connect().finally(()=>{connect.busy=false})}else if(col&&dirty.size)flush()}
+
+/* ---------- Cuenta propia (la web, fuera de claude.ai) ----------
+   Firebase (proyecto empat-data-9d079, Firestore en Europa) por su API REST, sin librerías externas y sin analítica.
+   Solo se pide usuario y contraseña. De la contraseña salen dos claves con PBKDF2: una para entrar (Firebase nunca ve la contraseña)
+   y otra para cifrar con AES-GCM en el dispositivo todo lo que se sube. Si se olvida la contraseña no hay forma de leer la cuenta: quedan este dispositivo y las copias .json. */
+const FB={key:"AIzaSyCemqQkboSFTxLAzyPNA5ey9MrpCrs8NqU",project:"empat-data-9d079",mail:"@cuentas.empat-data.invalid"};
+const FS_URL="https://firestore.googleapis.com/v1/projects/"+FB.project+"/databases/(default)/documents/";
+const ACC_KEY=LS_KEY+"-cuenta";
+let acc=null;try{acc=JSON.parse(localStorage.getItem(ACC_KEY))||null;if(acc&&!(acc.uid&&acc.rt&&acc.ek))acc=null}catch(e){}
+function accSave(){try{if(acc)localStorage.setItem(ACC_KEY,JSON.stringify(acc));else localStorage.removeItem(ACC_KEY)}catch(e){}}
+const accUser=u=>String(u||"").trim().toLowerCase();
+const accUserOk=u=>/^[a-z0-9][a-z0-9._-]{2,29}$/.test(u);
+const fbErr=(code,msg)=>{const e=new Error(msg||code);e.code=code;return e};
+async function fbFetch(url,opt){const ac=new AbortController(),t=setTimeout(()=>ac.abort(),15000);
+  try{return await fetch(url,{...opt,signal:ac.signal})}catch(e){throw fbErr("unavailable","sin conexión")}finally{clearTimeout(t)}}
+async function fbIdt(path,body){const r=await fbFetch("https://identitytoolkit.googleapis.com/v1/"+path+"?key="+FB.key,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+  const j=await r.json().catch(()=>({}));if(!r.ok){const m=String(j.error&&j.error.message||"");throw fbErr(r.status>=500||r.status===429?"unavailable":m.split(/[ :]/)[0]||"error",m)}return j}
+async function deriveKeys(user,pass){const te=new TextEncoder();const base=await crypto.subtle.importKey("raw",te.encode(pass),"PBKDF2",false,["deriveBits"]);
+  const bits=new Uint8Array(await crypto.subtle.deriveBits({name:"PBKDF2",hash:"SHA-256",salt:te.encode("empat-data/v1/"+user),iterations:310000},base,512));
+  return{auth:b64u.enc(bits.slice(0,32)),ek:b64u.enc(bits.slice(32))}}
+/* Si la sesión ya no vale (cuenta borrada en otro dispositivo, por ejemplo), se sale sin tocar los datos del dispositivo */
+function accLost(){acc=null;accSave();db=null;col=null;setSync("local");render();toast("Se ha cerrado la sesión de tu cuenta. Vuelve a entrar en Equipo.",null,5000)}
+async function fbToken(){if(!acc)throw fbErr("unauthenticated");if(acc.it&&acc.ie>Date.now()+60e3)return acc.it;
+  const r=await fbFetch("https://securetoken.googleapis.com/v1/token?key="+FB.key,{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:"grant_type=refresh_token&refresh_token="+encodeURIComponent(acc.rt)});
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok){const m=String(j.error&&j.error.message||"");if(r.status===400&&/TOKEN_EXPIRED|USER_DISABLED|USER_NOT_FOUND|INVALID_REFRESH_TOKEN/.test(m)){accLost();throw fbErr("unauthenticated")}throw fbErr("unavailable",m)}
+  acc.it=j.id_token;acc.rt=j.refresh_token||acc.rt;acc.ie=Date.now()+(+j.expires_in||3600)*1000;accSave();return acc.it}
+/* Firestore REST: campos con tipo. Aquí solo hay textos, números y sí/no */
+const fsVal=v=>typeof v==="string"?{stringValue:v}:typeof v==="boolean"?{booleanValue:v}:Number.isInteger(v)?{integerValue:String(v)}:typeof v==="number"?{doubleValue:v}:{nullValue:null};
+const fsEnc=o=>{const f={};for(const k in o)if(o[k]!==undefined)f[k]=fsVal(o[k]);return{fields:f}};
+const fsDec=f=>{const o={};for(const k in f||{}){const x=f[k];o[k]="stringValue"in x?x.stringValue:"booleanValue"in x?x.booleanValue:"integerValue"in x?+x.integerValue:"doubleValue"in x?x.doubleValue:null}return o};
+async function fsReq(method,path,body,auth){const h={};if(body)h["Content-Type"]="application/json";if(auth!==false&&acc)h.Authorization="Bearer "+await fbToken();
+  const r=await fbFetch(FS_URL+path,{method,headers:h,body:body?JSON.stringify(body):undefined});
+  if(r.status===404)return null;const j=await r.json().catch(()=>({}));
+  if(!r.ok)throw fbErr(r.status===403?"permission_denied":r.status===401?"unauthenticated":r.status>=500||r.status===429?"unavailable":"error",j.error&&j.error.message);return j}
+/* Cada documento de la cuenta va cifrado; la ruta entra como dato asociado para que no se pueda mover un documento a otro sitio */
+async function sealDoc(k,body){const iv=crypto.getRandomValues(new Uint8Array(12));
+  const ct=await crypto.subtle.encrypt({name:"AES-GCM",iv,additionalData:new TextEncoder().encode(acc.uid+"/"+k)},await aesKey(b64u.dec(acc.ek),"encrypt"),new TextEncoder().encode(JSON.stringify({data:body.data===undefined?null:body.data})));
+  return{kind:body.kind,iv:b64u.enc(iv),ct:b64u.enc(new Uint8Array(ct)),updatedAt:Math.round(+body.updatedAt||0),deleted:body.deleted?true:undefined}}
+async function openDoc(k,f){const pt=await crypto.subtle.decrypt({name:"AES-GCM",iv:b64u.dec(f.iv),additionalData:new TextEncoder().encode(acc.uid+"/"+k)},await aesKey(b64u.dec(acc.ek),"decrypt"),b64u.dec(f.ct));
+  return{kind:f.kind,data:JSON.parse(new TextDecoder().decode(pt)).data,updatedAt:+f.updatedAt||0,deleted:!!f.deleted}}
+/* Misma forma que la base de datos de claude.ai, para que connect(), flush() y el directo no cambien */
+const fbCol={doc:k=>({set:async body=>{await fsReq("PATCH","users/"+acc.uid+"/docs/"+k,fsEnc(await sealDoc(k,body)))}}),
+  limit:()=>({get:async()=>{const docs=[];let pt="";
+    do{const j=await fsReq("GET","users/"+acc.uid+"/docs?pageSize=300"+(pt?"&pageToken="+encodeURIComponent(pt):""));
+      for(const d of(j&&j.documents)||[]){const k=d.name.split("/").pop();try{const v=await openDoc(k,fsDec(d.fields));docs.push({id:k,data:()=>v})}catch(e){}}
+      pt=j&&j.nextPageToken}while(pt);return{docs}}})};
+const fbSnap=(path,j)=>{const v=j&&fsDec(j.fields);return{id:path,exists:!!j,data:()=>v||undefined}};
+const fbDb={collection:()=>fbCol,doc:path=>({
+  set:async body=>{await fsReq("PATCH",path,fsEnc(body))},
+  get:async()=>fbSnap(path,await fsReq("GET",path,null,false)),
+  delete:async()=>{await fsReq("DELETE",path)},
+  /* Quien sigue un directo no necesita cuenta: se lee cada 3 s (el documento es público pero va cifrado) */
+  onSnapshot:(next,err)=>{let on=true,last;const tick=async()=>{if(!on)return;
+    try{const j=await fsReq("GET",path,null,false);const s=JSON.stringify(j);if(s!==last){last=s;next(fbSnap(path,j))}}catch(e){last=undefined;if(err)err(e)}
+    if(on)setTimeout(tick,document.visibilityState==="hidden"?15000:3000)};tick();return()=>{on=false}}})};
+/* Entrar o crear la cuenta. Los datos que ya hay en este dispositivo se suben a la cuenta y se unen con lo que tenga */
+async function accEnter(user,pass,create){user=accUser(user);
+  if(!accUserOk(user))throw fbErr("user");if(String(pass).length<8)throw fbErr("short");
+  const k=await deriveKeys(user,pass);
+  const j=await fbIdt(create?"accounts:signUp":"accounts:signInWithPassword",{email:user+FB.mail,password:k.auth,returnSecureToken:true});
+  acc={user,uid:j.localId,rt:j.refreshToken,it:j.idToken,ie:Date.now()+(+j.expiresIn||3600)*1000,ek:k.ek};accSave();
+  db=null;col=null;await connect();if(!col)setSync("offline")}
+async function accOut(wipe){if(share)await liveStop(true);acc=null;accSave();db=null;col=null;dirty.clear();
+  if(wipe){S=freshState();S.matches.ejemplo=makeExample();saveLocal();ui.liveId=null;pickLive()}setSync("local")}
+async function accDelete(){if(share)await liveStop(true);
+  const j=await fsReq("GET","users/"+acc.uid+"/docs?pageSize=300&mask.fieldPaths=kind");
+  for(const d of(j&&j.documents)||[])await fsReq("DELETE","users/"+acc.uid+"/docs/"+d.name.split("/").pop());
+  if(j&&j.nextPageToken)return accDelete();
+  await fbIdt("accounts:delete",{idToken:await fbToken()});await accOut(false)}
+const ACC_MSG={user:"El nombre de usuario va de 3 a 30 letras sin tildes, números, punto, guion o guion bajo, sin espacios.",short:"La contraseña tiene que tener al menos 8 caracteres.",
+  EMAIL_EXISTS:"Ese nombre de usuario ya está cogido. Prueba otro.",INVALID_LOGIN_CREDENTIALS:"Usuario o contraseña incorrectos.",EMAIL_NOT_FOUND:"Usuario o contraseña incorrectos.",INVALID_PASSWORD:"Usuario o contraseña incorrectos.",
+  TOO_MANY_ATTEMPTS_TRY_LATER:"Demasiados intentos seguidos. Espera unos minutos.",USER_DISABLED:"Esta cuenta está desactivada.",unavailable:"Sin conexión. Inténtalo cuando tengas internet.",
+  same:"Las dos contraseñas no coinciden.",sure:"Marca la casilla para confirmar que has apuntado la contraseña."};
+function accZone(){if(hasClaude())return"";const a=ui.acc||{},busy=a.busy?"disabled":"";
+  const err=a.err?`<p class="small" role="alert" style="margin:0;color:var(--bad)">${esc(ACC_MSG[a.err]||"No se ha podido. Inténtalo otra vez.")}</p>`:"";
+  if(acc){const ask=a.ask;
+    return`<div class="zone" id="acczone"><p class="hand">Tu cuenta</p>
+    <p class="small" style="margin:0">Has entrado como <b>${esc(acc.user)}</b>. La plantilla y los partidos se guardan cifrados en tu cuenta: entra con el mismo usuario en otro móvil u ordenador y los tendrás allí.</p>
+    ${ask==="out"?`<div class="frow"><span class="small">¿Dejas los datos en este dispositivo? Si no es tuyo, bórralos: siguen en tu cuenta.</span><div class="row"><button class="btn sm" data-act="accout" ${busy}>Salir y dejarlos aquí</button><button class="btn sm danger" data-act="accoutwipe" ${busy}>Salir y borrarlos de aquí</button><button class="btn sm" data-act="accno">Cancelar</button></div></div>`
+    :ask==="del"?`<div class="frow"><span class="small">Se borra la cuenta y todo lo guardado en ella, para siempre. Lo que hay en este dispositivo se queda.</span><div class="row"><button class="btn sm danger" data-act="accdelyes" ${busy}>Borrar la cuenta</button><button class="btn sm" data-act="accno">Cancelar</button></div></div>`
+    :`<div class="row"><button class="btn sm" data-act="accask" data-v="out">Cerrar sesión</button><button class="btn sm danger" data-act="accask" data-v="del">Borrar la cuenta</button></div>`}${err}</div>`}
+  const nw=!!a.nw;
+  return`<div class="zone" id="acczone"><p class="hand">Tu cuenta</p>
+    <p class="muted small" style="margin:0">Opcional. Con una cuenta tienes la plantilla y los partidos en cualquier móvil u ordenador, y puedes compartir partidos en directo. Solo se pide un nombre de usuario y una contraseña: ni correo, ni teléfono, ni edad. Todo se cifra en este dispositivo antes de salir; en el servidor solo hay texto cifrado.</p>
+    <form id="accform" class="frow" style="gap:8px">
+      <label class="f">Nombre de usuario<input type="text" id="acc-user" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="30" value="${esc(a.user||"")}"></label>
+      <label class="f">Contraseña<input type="password" id="acc-pass" autocomplete="${nw?"new-password":"current-password"}"></label>
+      ${nw?`<label class="f">Repite la contraseña<input type="password" id="acc-pass2" autocomplete="new-password"></label>
+      <label class="row small" style="gap:8px;align-items:flex-start;flex-wrap:nowrap"><input type="checkbox" id="acc-sure" style="flex:none;margin-top:2px"><span>He apuntado la contraseña. Sé que si la olvido no se puede recuperar ni leer lo guardado en la cuenta (lo de este dispositivo y mis copias .json sí se quedan).</span></label>`
+      :`<p class="small" style="margin:0;color:var(--mid)">Si olvidas la contraseña no se puede recuperar: por eso nadie más puede leer tus datos.</p>`}
+      ${err}
+      <div class="row"><button class="btn primary" type="submit" ${busy}>${a.busy?"Comprobando…":nw?"Crear la cuenta":"Entrar"}</button><button class="btn" type="button" data-act="accmode" ${busy}>${nw?"Ya tengo cuenta":"Crear una cuenta"}</button></div>
+    </form></div>`}
+async function accSubmit(){const a=ui.acc=ui.acc||{};if(a.busy)return;const user=($("#acc-user")||{}).value||"",pass=($("#acc-pass")||{}).value||"";a.user=user;a.err=null;
+  if(!accUserOk(accUser(user))){a.err="user";render();const f=$("#acc-user");if(f)f.focus();return}
+  if(a.nw){if(pass!==(($("#acc-pass2")||{}).value||"")){a.err="same";render();return}if(!($("#acc-sure")||{}).checked){a.err="sure";render();return}}
+  a.busy=true;render();
+  try{await accEnter(user,pass,a.nw);ui.acc={};render();toast(a.nw?"Cuenta creada: lo de este dispositivo ya está en tu cuenta":"Has entrado en tu cuenta",null,3500)}
+  catch(e){a.busy=false;a.err=e&&e.code||"error";render();const f=$(a.err==="user"?"#acc-user":"#acc-pass");if(f)f.focus()}}
 
 /* ---------- Vídeo: apuntar después, viendo la grabación ----------
    El vídeo se abre desde el dispositivo y no sale de él (ni se guarda: es demasiado grande). Cada jugada apuntada con el vídeo abierto guarda vt = segundo del vídeo. */
@@ -712,19 +818,20 @@ function livePush(now){if(!share)return;clearTimeout(shareT);if(!now){shareT=set
   (async()=>{const m=S.matches[share.mid];if(!m||!db){shareErr=db?"gone":"nodb";paintShare();return}
     try{const body=await seal(liveSnapshot(m),share.key);await db.doc("live/"+share.uid).set({v:1,iv:body.iv,ct:body.ct,exp:Date.now()+LIVE_H*3600e3,t:Date.now()});shareErr=null;shareAt=Date.now()}
     catch(e){shareErr=e&&(e.code==="invalid_argument"||e.code==="permission_denied")?"ro":"net"}paintShare()})()}
-async function liveStart(m){if(!db){toast("El directo necesita emPat Data abierto en claude.ai con tu sesión iniciada");return}
-  let uid=null;try{const u=await window.claude.use("user");uid=u&&await u.id()}catch(e){}if(!uid){toast("No se pudo saber quién eres: inicia sesión en claude.ai");return}
+const NEED_ACC=()=>hasClaude()?"abre emPat Data en claude.ai con la sesión iniciada":"entra en tu cuenta (pestaña Equipo)";
+async function liveStart(m){if(!db){toast("Para compartir en directo, "+NEED_ACC());return}
+  const uid=await myUid();if(!uid){toast("No se pudo saber quién eres: "+NEED_ACC());return}
   if(share&&share.uid!==uid)await liveStop(true);
   share={mid:m.id,uid:sid(uid),key:b64u.enc(crypto.getRandomValues(new Uint8Array(16))),names:false,since:Date.now()};shareSave();shareErr=null;render();livePush(true)}
 async function liveStop(quiet){const x=share;share=null;shareSave();clearTimeout(shareT);if(db&&x)try{await db.doc("live/"+x.uid).delete()}catch(e){}if(!quiet){render();toast("Directo parado: el código ya no sirve")}}
 function paintShare(){const el=document.getElementById("share-st");if(el)el.innerHTML=shareStatus()}
 function shareStatus(){if(shareErr==="ro")return`<span style="color:var(--bad)">Tu acceso a esta app es de solo lectura y no se puede publicar el directo. Pide a quien te la pasó acceso de colaborador.</span>`;
-  if(shareErr==="nodb")return`<span style="color:var(--bad)">Sin conexión con tu cuenta: abre emPat Data en claude.ai con la sesión iniciada.</span>`;
+  if(shareErr==="nodb")return`<span style="color:var(--bad)">Sin conexión con tu cuenta: ${NEED_ACC()}.</span>`;
   if(shareErr==="net")return`<span style="color:var(--mid)">No se pudo enviar la última jugada; se reintenta con la siguiente.</span>`;
   return shareAt?`Enviado a las ${new Date(shareAt).toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit",second:"2-digit"})}`:"Conectando…"}
 function shareZone(m){if(m.example)return"";const on=share&&share.mid===m.id;
   if(!on)return`<div class="zone"><div class="row spread"><p class="hand">Directo para el banquillo y las familias</p><button class="btn sm" data-act="livestart" ${db?"":"disabled"}>Compartir en directo</button></div>
-    <p class="muted small" style="margin:0">Quien tenga el código ve el marcador, las jugadas y las cifras en su móvil, sin poder cambiar nada. Salen los dorsales; los nombres de pila, solo si lo eliges. Lo puedes parar cuando quieras y caduca a las ${LIVE_H} horas.${db?"":" Disponible al abrir emPat Data en claude.ai con la sesión iniciada."}${share&&share.mid!==m.id?" Ahora mismo compartes otro partido: al empezar este, aquel se para.":""}</p></div>`;
+    <p class="muted small" style="margin:0">Quien tenga el código ve el marcador, las jugadas y las cifras en su móvil, sin poder cambiar nada. Salen los dorsales; los nombres de pila, solo si lo eliges. Lo puedes parar cuando quieras y caduca a las ${LIVE_H} horas.${db?"":hasClaude()?" Disponible al abrir emPat Data en claude.ai con la sesión iniciada.":" Para compartir, entra en tu cuenta en la pestaña Equipo. Para seguir un directo no hace falta cuenta."}${share&&share.mid!==m.id?" Ahora mismo compartes otro partido: al empezar este, aquel se para.":""}</p></div>`;
   return`<div class="zone" style="box-shadow:inset 0 0 0 2px var(--good)"><div class="row spread"><p class="hand" style="color:var(--good)">● Compartiendo en directo</p><button class="btn sm danger" data-act="livestop">Dejar de compartir</button></div>
     <label class="f">Código para seguir el partido (pásalo por el grupo)<input type="text" id="share-code" readonly value="${esc(shareCode())}"></label>
     <div class="row"><button class="btn sm primary" data-act="livecopy">Copiar el código</button><label class="row small" style="gap:6px"><input type="checkbox" id="share-names" ${share.names?"checked":""}> Enseñar los nombres de pila</label></div>
@@ -738,7 +845,7 @@ async function follow(code){code=String(code||"").trim().replace(/\s+/g,"");cons
   fol={code,unsub:null,data:null,err:null,at:0};try{localStorage.setItem(LIVE_KEY+"-sigo",code)}catch(e){}
   const uid=sid(code.slice(0,i)),key=code.slice(i+1);
   if(i<1||!uid||!/^[A-Za-z0-9_-]{20,}$/.test(key)){fol.err="code";render();return}
-  let d=db;if(!d)try{d=window.claude&&window.claude.use?await window.claude.use("db"):null}catch(e){}
+  let d=db;if(!d)try{d=hasClaude()?await window.claude.use("db"):fbDb}catch(e){}
   if(!d){fol.err="nodb";render();return}
   render();
   fol.unsub=d.doc("live/"+uid).onSnapshot(async snap=>{const x=snap.exists?snap.data():null;
@@ -1346,6 +1453,7 @@ function viewTeam(){
     <div class="row" style="margin-top:8px"><button class="btn sm" data-act="bulkcheck">Revisar</button>${ui.bulk&&ui.bulk.ok?`<button class="btn sm primary" data-act="bulkdo">Añadir ${ui.bulk.ok.length}</button>`:""}<button class="btn sm" data-act="bulkcopy" ${pl.length?"":"disabled"}>Copiar plantilla</button></div></details>
   </div>
   <div class="zone"><p class="hand">Pantalla</p><label class="row" style="gap:10px;font-size:15px"><input type="checkbox" id="bigtxt" ${bigText()?"checked":""}> Letra y botones más grandes</label><span class="muted small">Se guarda solo en este dispositivo.</span></div>
+  ${accZone()}
   ${backupZone()}
   <div class="zone"><div class="row spread"><p class="hand">Qué cierra cada jugada</p><button class="btn sm" data-act="tablereset">Valores por defecto</button></div>
     <p class="muted small" style="margin:0">Para cada fundamento y evaluación, quién se lleva el punto. Se aplica a los partidos nuevos; cada partido guarda la tabla con la que se apuntó.</p>
@@ -1490,6 +1598,11 @@ document.addEventListener("click",async ev=>{
       teamChanged();const n=b.ok.length;ui.bulk=null;render();toast(n+" jugadores en la plantilla");break}
     case"bulkcopy":{const txt=S.team.players.slice().sort((a,b)=>a.num-b.num).map(p=>p.num+" "+p.name+" "+p.pos).join("\n");try{await navigator.clipboard.writeText(txt);toast("Plantilla copiada")}catch(e){showCopyBox(txt)}break}
     case"rmpno":{ui.confirmRmp=null;render();break}
+    case"accmode":{const a=ui.acc=ui.acc||{};a.user=($("#acc-user")||{}).value||a.user;a.nw=!a.nw;a.err=null;render();const f=$("#acc-user");if(f)f.focus();break}
+    case"accask":{ui.acc={ask:t.dataset.v};render();break}
+    case"accno":{ui.acc={};render();break}
+    case"accout":case"accoutwipe":{ui.acc={ask:"out",busy:true};render();await accOut(a==="accoutwipe");ui.acc={};render();toast(a==="accoutwipe"?"Sesión cerrada y datos borrados de este dispositivo":"Sesión cerrada. Los datos siguen en este dispositivo y en tu cuenta");break}
+    case"accdelyes":{ui.acc={ask:"del",busy:true};render();try{await accDelete();ui.acc={};render();toast("Cuenta borrada. Lo de este dispositivo se queda",null,4000)}catch(e){ui.acc={ask:"del",err:e&&e.code||"error"};render()}break}
     case"vplay":{const v=vEl();if(v){vid.hold=false;v.paused?v.play().catch(()=>{}):v.pause()}break}
     case"vskip":{const v=vEl();if(v)v.currentTime=Math.max(0,v.currentTime+(+t.dataset.d));break}
     case"vrate":{const v=vEl();if(!v)break;const R=[1,0.5,0.75,1.5,2];const nx=R[(R.indexOf(v.playbackRate)+1)%R.length]||1;v.playbackRate=nx;t.textContent=nx+"×";break}
@@ -1537,6 +1650,7 @@ document.addEventListener("change",ev=>{
     p[fld]=fld==="num"?(+t.value||0):t.value;teamChanged();return}
 });
 document.addEventListener("submit",ev=>{ev.preventDefault();
+  if(ev.target.id==="accform"){accSubmit();return}
   if(ev.target.id==="addp"){const num=$("#np-num").value,name=$("#np-name").value.trim();if(num===""||!name)return;
     if(S.team.players.some(p=>p.num===+num)){toast("Ya hay un jugador con el dorsal "+num);return}
     S.team.players.push({id:newId(),num:+num,name,pos:$("#np-pos").value});teamChanged();render();setTimeout(()=>{const n=$("#np-num");if(n)n.focus()},0)}
@@ -1564,7 +1678,7 @@ pickLive();
 if(!ui.liveId&&S.matches.ejemplo&&S.matches.ejemplo.status==="live")ui.liveId="ejemplo";
 render();
 connect();
-window.__empat={get share(){return share},liveSnapshot,seal,unseal,get S(){return S},replay,effective,normalizeMatch,mergeMatch,parseBackup,backupText,matchFileText,applyBackup,statsImage,computeStats,gather,printHTML,compKey,seasonMatches,get ui(){return ui}};
+window.__empat={get share(){return share},get acc(){return acc},accEnter,fbDb,liveSnapshot,seal,unseal,get S(){return S},replay,effective,normalizeMatch,mergeMatch,parseBackup,backupText,matchFileText,applyBackup,statsImage,computeStats,gather,printHTML,compKey,seasonMatches,get ui(){return ui}};
 })();
 </script>
 

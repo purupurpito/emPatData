@@ -5,11 +5,12 @@ Estadísticas de vóley a pie de pista: tocas a la jugadora y lo que ha hecho, y
 **Pruébala:** https://purupurpito.github.io/emPatData/
 
 - Sin instalar nada, en el móvil, la tablet o el ordenador. Trae un partido de ejemplo para curiosear.
-- Los datos se quedan en tu navegador: no se envían a ningún sitio. Descarga una copia de seguridad de vez en cuando (Equipo › Copia de seguridad).
+- Sin cuenta, los datos se quedan en tu navegador. Descarga una copia de seguridad de vez en cuando (Equipo › Copia de seguridad).
+- Con cuenta (opcional, Equipo › Tu cuenta), los tienes en cualquier móvil u ordenador. Solo pide usuario y contraseña, ni correo ni ningún otro dato, y todo se cifra en tu dispositivo antes de salir: en el servidor solo hay texto cifrado. Si olvidas la contraseña no se puede recuperar.
 - Para jugadores en el banquillo: «Me he perdido puntos», apuntar después con el vídeo del partido y «Enviar» el partido al entrenador.
 - Exporta CSV, una imagen para el grupo del equipo y una hoja para imprimir o guardar como PDF.
 
-En esta demo no están el guardado en la cuenta ni el directo para seguir el partido desde otro móvil, porque necesitan la versión de claude.ai.
+- Directo para el banquillo y las familias: con cuenta, compartes un código y quien lo tenga sigue el marcador, las jugadas y las cifras desde su móvil, sin poder cambiar nada y sin necesitar cuenta. Salen los dorsales; los nombres de pila, solo si lo eliges.
 
 Forma parte de emPat, junto con el acta digital: https://purupurpito.github.io/emPat/
 
